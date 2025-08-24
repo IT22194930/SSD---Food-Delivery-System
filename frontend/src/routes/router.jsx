@@ -17,7 +17,7 @@ import Profile from "../pages/Dashboard/Profile/Profile";
 import RestaurantRegistration from "../pages/RestaurantRegistration/RestaurantRegistration";
 import RestaurantRequests from "../pages/Dashboard/Admin/RestaurantRequests";
 import DeliveryPersonnelManagement from "../pages/Dashboard/Admin/DeliveryPersonnelManagement";
-import RestaurantAdminHome from "../pages/dashboard/RestaurantAdminHome";
+import RestaurantAdminHome from "../pages/Dashboard/RestaurantAdminHome";
 import DeliveryRegistration from "../pages/Registration/DeliveryRegistration";
 import DeliveryHome from "../pages/Dashboard/DeliveryHome";
 import CurrentDeliveries from "../pages/Dashboard/Delivery/CurrentDeliveries";

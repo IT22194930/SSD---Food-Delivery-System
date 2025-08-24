@@ -56,6 +56,8 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3004
+      - ORDER_SERVICE_URL=http://order-service:3003
+      - DELIVERY_SERVICE_URL=http://delivery-service:3005
 
   delivery-service:
     build:
@@ -66,6 +68,8 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3005
+      - ORDER_SERVICE_URL=http://order-service:3003
+      - AUTH_SERVICE_URL=http://authentication-service:3001
 
   restaurant-service:
     build:

@@ -7,7 +7,7 @@ import RestaurantRequests from '../pages/Dashboard/Admin/RestaurantRequests';
 import DeliveryPersonnelManagement from '../pages/Dashboard/Admin/DeliveryPersonnelManagement';
 import ManageUsers from '../pages/Dashboard/Admin/ManageUsers';
 import UserHome from '../pages/Dashboard/User/UserHome';
-import RestaurantAdminHome from '../pages/dashboard/RestaurantAdminHome';
+import RestaurantAdminHome from '../pages/Dashboard/RestaurantAdminHome';
 import DeliveryPersonnelHome from '../pages/Dashboard/DeliveryPersonnel/DeliveryPersonnelHome';
 import { getCurrentUser } from '../utils/auth';
 import { MdLocalShipping, MdHistory, MdPerson, MdPayments, MdAccessTime } from 'react-icons/md';
