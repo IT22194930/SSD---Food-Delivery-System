@@ -1,6 +1,5 @@
 import { FcGoogle } from "react-icons/fc";
 import useAuth from "../../hooks/useAuth";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 const GoogleLogin = () => {
@@ -9,33 +8,9 @@ const GoogleLogin = () => {
 
   const handleLogin = async () => {
     try {
-      const userCredential = await googleLogin();
-      const user = userCredential.user;
-      console.log("Google user:", user); // Log user object for debugging
-
-      if (user) {
-        const userImp = {
-          name: user.displayName,
-          email: user.email,
-          photoURL: user.photoURL,
-          role: "customer",
-        };
-
-        if (userImp.email && userImp.name) {
-          try {
-            const response = await axios.post("http://localhost:3000/api/auth/register", userImp);
-            console.log("Registration response:", response.data);
-            navigate("/"); // Navigate after successful registration
-            console.log("Registration Successful");
-          } catch (err) {
-            console.error("Error during registration:", err.response || err);
-            alert("Registration failed. Please try again.");
-          }
-        } else {
-          console.error("User data is missing: ", userImp);
-          alert("Missing user data. Please try again.");
-        }
-      }
+      await googleLogin();
+      navigate("/"); // Navigate after successful login
+      console.log("Google Login Successful");
     } catch (error) {
       console.error("Google login error:", error);
       alert("Failed to log in with Google. Please try again.");

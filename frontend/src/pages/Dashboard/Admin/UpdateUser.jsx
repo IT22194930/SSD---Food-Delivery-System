@@ -3,17 +3,16 @@ import { FaArrowLeft, FaPencilAlt } from "react-icons/fa";
 import useAuth from "../../../hooks/useAuth";
 import { useParams, useNavigate } from "react-router-dom";
 import useAxiosFetch from "../../../hooks/useAxiosFetch";
-import useAxiosSecure from "../../../hooks/useAxiosSecure";
 import useUser from "../../../hooks/useUser";
 import storage from "../../../config/firebase.init";
 import Swal from "sweetalert2";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import axios from "axios";
 
 const UpdateUser = () => {
   const { user } = useAuth();
   const { id } = useParams();
   const axiosFetch = useAxiosFetch();
-  const axiosSecure = useAxiosSecure();
   const { currentUser } = useUser();
   const navigate = useNavigate();
   const [img, setImg] = useState(undefined);
@@ -30,33 +29,49 @@ const UpdateUser = () => {
     photoUrl: "",
   });
 
+  // Helper function to get auth headers
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("token");
+    return {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    };
+  };
+
   useEffect(() => {
     // Fetch user data when component mounts
-    axiosSecure
-      .get(`/api/auth/users/${id}`)
+    
+    axios
+      .get(`${import.meta.env.VITE_API_URL}/api/auth/users/${id}`, getAuthHeaders())
       .then((res) => {
-        const user = res.data;
-        setUserData(user);
+        const fetchedUser = res.data;
+        setUserData(fetchedUser);
         // Set form data with the user's current role
         setFormData({
-          name: user.name || "",
-          email: user.email || "",
-          phone: user.phone || "",
-          address: user.address || "",
-          role: user.role || "customer",
-          photoUrl: user.photoUrl || "",
+          name: fetchedUser.name || "",
+          email: fetchedUser.email || "",
+          phone: fetchedUser.phone || "",
+          address: fetchedUser.address || "",
+          role: fetchedUser.role || "customer",
+          photoUrl: fetchedUser.photoUrl || "",
         });
       })
       .catch((err) => {
         console.error("Error fetching user:", err);
+        console.error("Error response:", err.response);
+        console.error("Error status:", err.response?.status);
+        console.error("Error data:", err.response?.data);
+        
         Swal.fire({
           title: "Error!",
-          text: "Failed to fetch user data.",
+          text: `Failed to fetch user data: ${err.response?.data?.message || err.message}`,
           icon: "error",
         });
         navigate("/dashboard/manage-users");
       });
-  }, [id, axiosSecure, navigate]);
+  }, [id, navigate]); // Removed axiosSecure from dependency array
 
   useEffect(() => {
     if (img) {
@@ -95,12 +110,10 @@ const UpdateUser = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log("Changing", name, "to", value);
 
-    // Update form data directly
-    setFormData((prevData) => {
+    // Update form data using functional state update
+    setFormData(prevData => {
       const newData = { ...prevData, [name]: value };
-      console.log("Updated form data:", newData);
       return newData;
     });
   };
@@ -116,8 +129,8 @@ const UpdateUser = () => {
       role: formData.role,
     };
     // Send update request
-    axiosSecure
-      .patch(`/api/auth/users/${id}`, updateData)
+    axios
+      .patch(`http://localhost:3000/api/auth/users/${id}`, updateData, getAuthHeaders())
       .then((res) => {
         Swal.fire({
           title: "Updated!",
@@ -128,9 +141,20 @@ const UpdateUser = () => {
       })
       .catch((err) => {
         console.error("Update error:", err);
+        console.error("Error response:", err.response);
+        console.error("Error status:", err.response?.status);
+        console.error("Error data:", err.response?.data);
+        
+        let errorMessage = "Failed to update user details.";
+        if (err.response?.data?.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.response?.data?.error) {
+          errorMessage = err.response.data.error;
+        }
+        
         Swal.fire({
           title: "Error!",
-          text: "Failed to update user details.",
+          text: errorMessage,
           icon: "error",
         });
       });
@@ -232,7 +256,7 @@ const UpdateUser = () => {
                       required
                       id="name"
                       name="name"
-                      value={formData.name}
+                      value={formData.name || ""}
                       onChange={handleChange}
                     />
                   </div>
@@ -262,7 +286,7 @@ const UpdateUser = () => {
                     required
                     id="phone"
                     name="phone"
-                    value={formData.phone}
+                    value={formData.phone || ""}
                     onChange={handleChange}
                   />
                 </div>
@@ -276,7 +300,7 @@ const UpdateUser = () => {
                     type="text"
                     id="address"
                     name="address"
-                    value={formData.address}
+                    value={formData.address || ""}
                     onChange={handleChange}
                   />
                 </div>
@@ -290,7 +314,7 @@ const UpdateUser = () => {
                 <select
                   className="w-full p-3 text-sm border rounded-lg outline-none border-primary"
                   name="role"
-                  value={formData.role}
+                  value={formData.role || "customer"}
                   onChange={handleChange}
                 >
                   <option value="customer">Customer</option>
