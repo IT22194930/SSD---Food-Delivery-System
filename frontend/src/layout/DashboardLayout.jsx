@@ -152,23 +152,9 @@ const DashboardLayout = () => {
   const { loader, logout } = useAuth();
   const { currentUser } = useUser();
   const navigate = useNavigate();
-  const [selectedRole, setSelectedRole] = useState(() => {
-    // Get the stored role from localStorage, or use the current user's role
-    const storedRole = localStorage.getItem("selectedDashboardRole");
-    return storedRole || currentUser?.role || "customer";
-  });
-
-  useEffect(() => {
-    // Update localStorage when selectedRole changes
-    localStorage.setItem("selectedDashboardRole", selectedRole);
-  }, [selectedRole]);
-
-  // Update selectedRole when currentUser changes
-  useEffect(() => {
-    if (currentUser?.role && !localStorage.getItem("selectedDashboardRole")) {
-      setSelectedRole(currentUser.role);
-    }
-  }, [currentUser]);
+  
+  // Simply use the current user's role - no localStorage needed
+  const selectedRole = currentUser?.role || "customer";
 
   const handleLogout = () => {
     Swal.fire({
@@ -188,7 +174,6 @@ const DashboardLayout = () => {
             icon: "success",
           })
         );
-        localStorage.removeItem("selectedDashboardRole"); // Clear the stored role on logout
         navigate("/").catch((error) => console.log(error));
       }
     });
