@@ -457,11 +457,6 @@ const updateOrder = async (req, res) => {
           });
         }
 
-        console.log("📝 Creating delivery record...");
-        console.log("Order ID:", order._id);
-        console.log("Driver ID:", userId);
-        console.log("Delivery Service URL:", DELIVERY_SERVICE_URL);
-
         // Create delivery record with correct endpoint
         const deliveryResponse = await axios.post(
           `${DELIVERY_SERVICE_URL}/api/deliveries/assign-driver`,

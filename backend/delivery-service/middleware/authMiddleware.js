@@ -14,14 +14,12 @@ const authMiddleware = (req, res, next) => {
     console.log("Received token:", token);
 
     const verified = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("Decoded token:", verified);
 
     // Ensure the user object has the correct structure
     req.user = {
       id: verified.id,
       role: verified.role,
     };
-    console.log("Set user object:", req.user);
 
     next();
   } catch (error) {

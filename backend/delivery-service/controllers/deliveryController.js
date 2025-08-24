@@ -12,8 +12,6 @@ const assignDriver = async (req, res) => {
     const { orderId, driverId } = req.body;
     const userId = req.user.id;
 
-    console.log("🔍 Assigning driver:", { orderId, driverId, userId });
-
     // Check if user is authorized to assign drivers - user must have delivery_personnel role
     if (req.user.role !== "delivery_personnel" && req.user.role !== "admin") {
       return res.status(403).json({
