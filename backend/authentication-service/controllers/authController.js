@@ -218,9 +218,106 @@ const deleteUser = async (req, res) => {
   }
 };
 
+//  Google Login/Register
+const googleAuth = async (req, res) => {
+  try {
+    const { name, email, photoUrl, role = "customer" } = req.body;
+
+    // Validate required fields
+    if (!name || !email) {
+      return res.status(400).json({ message: "Name and email are required" });
+    }
+
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    
+    if (user) {
+      // User exists, update their info if needed and return login response
+      console.log("Existing Google user found:", { id: user._id, email: user.email });
+      
+      if (photoUrl && user.photoUrl !== photoUrl) {
+        user.photoUrl = photoUrl;
+        await user.save();
+        console.log("Updated photoUrl for existing user");
+      }
+      
+      // Generate JWT token
+      const token = jwt.sign(
+        { id: user._id, role: user.role },
+        process.env.JWT_SECRET
+      );
+
+      return res.json({
+        message: "Google login successful",
+        token,
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          address: user.address,
+          phone: user.phone,
+          photoUrl: user.photoUrl,
+          latitude: user.latitude,
+          longitude: user.longitude,
+        },
+      });
+    } else {
+      // User doesn't exist, create new user
+      // Hash a placeholder password for Google users
+      const salt = await bcrypt.genSalt(12);
+      const hashedPassword = await bcrypt.hash("google_auth_placeholder", salt);
+      
+      const userData = {
+        name,
+        email,
+        password: hashedPassword, // Hashed placeholder password for Google users
+        role,
+        photoUrl,
+        // Optional fields from request body
+        address: req.body.address,
+        phone: req.body.phone,
+        latitude: req.body.latitude,
+        longitude: req.body.longitude,
+      };
+
+      console.log("Creating new Google user:", { name, email, role });
+      const result = await User.create(userData);
+      console.log("Google user created successfully with ID:", result._id);
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { id: result._id, role: result.role },
+        process.env.JWT_SECRET
+      );
+
+      // Send response with token
+      return res.status(201).json({
+        message: "Google registration successful",
+        user: {
+          _id: result._id,
+          name: result.name,
+          email: result.email,
+          role: result.role,
+          address: result.address,
+          phone: result.phone,
+          photoUrl: result.photoUrl,
+          latitude: result.latitude,
+          longitude: result.longitude,
+        },
+        token,
+      });
+    }
+  } catch (error) {
+    console.error("Error with Google authentication:", error);
+    res.status(500).json({ message: "Google authentication failed" });
+  }
+};
+
 module.exports = {
   register,
   login,
+  googleAuth,
   getUserById,
   getUserByEmail,
   getAllUsers,

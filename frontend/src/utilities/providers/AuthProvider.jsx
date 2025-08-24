@@ -1,5 +1,7 @@
 import React, { createContext, useEffect, useState } from "react";
 import axios from "axios";
+import { signInWithPopup } from "firebase/auth";
+import { auth, provider } from "../../config/firebase.init";
 import {
   registerUser as registerUserFn,
   loginUser as loginUserFn,
@@ -90,14 +92,54 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-  // Google login - you would implement this with your backend
+  // Google login
   const googleLogin = async () => {
     try {
       setLoader(true);
-      // This would call your backend's Google auth endpoint
-      throw new Error("Google login not implemented with JWT yet");
+      setError("");
+      
+      // Use Firebase signInWithPopup
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      console.log("Firebase Google user:", user);
+      
+      if (user) {
+        // Create user object for backend authentication
+        const userImp = {
+          name: user.displayName,
+          email: user.email,
+          photoUrl: user.photoURL, // Firebase provides photoURL
+          role: "customer",
+        };
+
+        if (userImp.email && userImp.name) {
+          try {
+            // Use the new Google authentication endpoint
+            const response = await axios.post("http://localhost:3000/api/auth/google-auth", userImp);
+            console.log("Google authentication response:", response.data);
+            
+            // Store token and user info if successful
+            if (response.data.token) {
+              localStorage.setItem('token', response.data.token);
+              localStorage.setItem('user', JSON.stringify(response.data.user));
+              setUser(response.data.user);
+            }
+            
+            return result; // Return the Firebase result
+          } catch (err) {
+            console.error("Error during Google authentication:", err.response || err);
+            throw new Error(err.response?.data?.message || "Google authentication failed");
+          }
+        } else {
+          throw new Error("Missing user data from Google");
+        }
+      } else {
+        throw new Error("No user data received from Google");
+      }
     } catch (error) {
-      setError(error.message);
+      console.error("Google login error:", error);
+      setError(error.message || "Failed to log in with Google");
       throw error;
     } finally {
       setLoader(false);

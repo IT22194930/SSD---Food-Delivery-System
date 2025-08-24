@@ -95,12 +95,10 @@ const UpdateUser = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log("Changing", name, "to", value);
 
     // Update form data directly
     setFormData((prevData) => {
       const newData = { ...prevData, [name]: value };
-      console.log("Updated form data:", newData);
       return newData;
     });
   };
