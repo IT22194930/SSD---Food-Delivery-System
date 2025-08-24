@@ -186,21 +186,48 @@ const getAllUsers = async (req, res) => {
 //  Update User
 const updateUser = async (req, res) => {
   try {
+    console.log("Update user request received:");
+    console.log("User ID to update:", req.params.id);
+    console.log("Request body:", req.body);
+    console.log("Requesting user:", req.user);
+    
     const { name, email, role, address, phone, photoUrl } = req.body;
+    
+    // Check if the requesting user is an admin or updating their own profile
+    const isAdmin = req.user.role === 'admin';
+    const isOwnProfile = req.user.id === req.params.id;
+    
+    if (!isAdmin && !isOwnProfile) {
+      console.log("Permission denied: User is not admin and not updating own profile");
+      return res.status(403).json({ 
+        message: "Permission denied. You can only update your own profile or must be an admin." 
+      });
+    }
+    
+    // If not admin, prevent role changes
+    if (!isAdmin && role && role !== req.user.role) {
+      console.log("Permission denied: Non-admin trying to change role");
+      return res.status(403).json({ 
+        message: "Permission denied. Only admins can change user roles." 
+      });
+    }
 
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
       { name, email, role, address, phone, photoUrl },
       { new: true }
-    );
+    ).select('-password'); // Don't return password
 
-    if (!updatedUser)
+    if (!updatedUser) {
+      console.log("User not found with ID:", req.params.id);
       return res.status(404).json({ message: "User not found" });
+    }
 
+    console.log("User updated successfully:", updatedUser._id);
     res.json({ message: "User updated successfully", user: updatedUser });
   } catch (error) {
     console.error("Error updating user:", error);
-    res.status(500).json({ message: "Error updating user" });
+    res.status(500).json({ message: "Error updating user", error: error.message });
   }
 };
 
