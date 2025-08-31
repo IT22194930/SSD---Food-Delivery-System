@@ -132,7 +132,7 @@ const MyOrders = () => {
                   <div>
                     <h2 className="text-lg font-semibold">{order.restaurant?.name || 'Restaurant'}</h2>
                     <p className="text-gray-500 text-sm">
-                      Order #{order._id.slice(-6).toUpperCase()}
+                      Order #{order._id?.slice(-6).toUpperCase()}
                     </p>
                   </div>
                   <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${getStatusColor(order.status)}`}>

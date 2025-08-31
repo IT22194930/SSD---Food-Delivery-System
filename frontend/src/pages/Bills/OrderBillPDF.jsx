@@ -67,7 +67,7 @@ const OrderBillPDF = ({ order }) => (
           <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 5 }}>
             {order.restaurant?.name || "Restaurant"}
           </Text>
-          <Text>Order #{order._id.slice(-6).toUpperCase()}</Text>
+          <Text>Order #{order._id?.slice(-6).toUpperCase()}</Text>
           <Text>Status: {order.status}</Text>
           <Text>
             Date: {new Date(order.createdAt).toLocaleDateString()} at{" "}

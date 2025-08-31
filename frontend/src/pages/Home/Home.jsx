@@ -201,7 +201,7 @@ const LiveMap = ({ activeDeliveries }) => {
                   <Popup>
                     <div>
                       <p className="font-semibold">
-                        Delivery #{delivery.order?._id.slice(-6)}
+                        Delivery #{delivery.order?._id?.slice(-6)}
                       </p>
                       <p>{delivery.order?.deliveryAddress?.street}</p>
                       <p>{delivery.order?.deliveryAddress?.city}</p>
