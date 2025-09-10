@@ -165,7 +165,7 @@ const OrderDetails = () => {
                 {order.restaurant?.name || "Restaurant"}
               </h2>
               <p className="text-gray-500 text-sm">
-                Order #{order._id.slice(-6).toUpperCase()}
+                Order #{order._id?.slice(-6).toUpperCase()}
               </p>
             </div>
             <div
@@ -181,7 +181,7 @@ const OrderDetails = () => {
               <div className="flex items-center gap-4">
                 <PDFDownloadLink
                   document={<OrderBillPDF order={order} />}
-                  fileName={`order_${order._id.slice(-6).toUpperCase()}.pdf`}
+                  fileName={`order_${order._id?.slice(-6).toUpperCase()}.pdf`}
                 >
                   {({ loading }) =>
                     loading ? (

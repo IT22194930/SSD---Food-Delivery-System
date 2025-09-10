@@ -218,7 +218,7 @@ const OutForDelivery = () => {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold">
-                  Order #{order._id.slice(-6)}
+                  Order #{order._id?.slice(-6)}
                 </h3>
                 <span
                   className={`px-3 py-1 rounded-full text-sm ${

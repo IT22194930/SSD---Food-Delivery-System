@@ -177,7 +177,7 @@ const AdminHome = () => {
   const renderRestaurantTable = () => {
     const displayRestaurants = expandedRestaurants
       ? pendingRestaurants
-      : pendingRestaurants.slice(0, 3);
+      : pendingRestaurants?.slice(0, 3);
 
     return (
       <div className="overflow-x-auto">
@@ -229,7 +229,7 @@ const AdminHome = () => {
                         {restaurant.name}
                       </div>
                       <div className="text-sm text-gray-500">
-                        ID: {restaurant._id.slice(-6)}
+                        ID: {restaurant._id?.slice(-6)}
                       </div>
                     </div>
                   </div>
@@ -371,7 +371,7 @@ const AdminHome = () => {
   const renderDeliveryTable = () => {
     const displayDeliveries = expandedDeliveries
       ? pendingDeliveries
-      : pendingDeliveries.slice(0, 3);
+      : pendingDeliveries?.slice(0, 3);
 
     return (
       <div className="overflow-x-auto">
@@ -423,7 +423,7 @@ const AdminHome = () => {
                         {delivery.user?.name || "Unknown User"}
                       </div>
                       <div className="text-sm text-gray-500">
-                        ID: {delivery._id.slice(-6)}
+                        ID: {delivery._id?.slice(-6)}
                       </div>
                     </div>
                   </div>
