@@ -1,6 +1,8 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
+const { sanitizeInput } = require("../middleware/validation");
 
 //  Register a New User
 const register = async (req, res) => {
@@ -28,8 +30,8 @@ const register = async (req, res) => {
       return res.status(400).json({ message: "Invalid role specified" });
     }
 
-    // Check if email already exists
-    const existingUser = await User.findOne({ email });
+    // Check if email already exists - using $eq operator to prevent NoSQL injection
+    const existingUser = await User.findOne({ email: { $eq: email } });
     if (existingUser) {
       return res.status(400).json({ message: "Email already registered" });
     }
@@ -86,8 +88,8 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user by email
-    const user = await User.findOne({ email });
+    // Find user by email - using $eq operator to prevent NoSQL injection
+    const user = await User.findOne({ email: { $eq: email } });
     if (user) {
       console.log("User details:", {
         id: user._id,
@@ -138,7 +140,12 @@ const login = async (req, res) => {
 //  Get User by ID
 const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+
+    const user = await User.findOne({ _id: { $eq: req.params.id } }).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json(user);
@@ -156,7 +163,9 @@ const getUserByEmail = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    const user = await User.findOne({ email });
+    // Sanitize and use $eq operator to prevent NoSQL injection
+    const sanitizedEmail = sanitizeInput(email);
+    const user = await User.findOne({ email: { $eq: sanitizedEmail } });
     if (user) {
       res.json(user);
     } else {
@@ -212,8 +221,13 @@ const updateUser = async (req, res) => {
       });
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: { $eq: req.params.id } },
       { name, email, role, address, phone, photoUrl },
       { new: true }
     ).select('-password'); // Don't return password
@@ -234,7 +248,12 @@ const updateUser = async (req, res) => {
 //  Delete User
 const deleteUser = async (req, res) => {
   try {
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+
+    const deletedUser = await User.findOneAndDelete({ _id: { $eq: req.params.id } });
     if (!deletedUser)
       return res.status(404).json({ message: "User not found" });
 
@@ -255,8 +274,8 @@ const googleAuth = async (req, res) => {
       return res.status(400).json({ message: "Name and email are required" });
     }
 
-    // Check if user already exists
-    let user = await User.findOne({ email });
+    // Check if user already exists - using $eq operator to prevent NoSQL injection
+    let user = await User.findOne({ email: { $eq: email } });
     
     if (user) {
       // User exists, update their info if needed and return login response
