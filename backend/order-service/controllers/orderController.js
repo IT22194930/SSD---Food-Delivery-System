@@ -1,6 +1,8 @@
+
 const axios = require("axios");
 const Order = require("../models/Order");
 require("dotenv").config();
+const sanitizeHtml = require("sanitize-html");
 
 // Load API Gateway service URLs from environment variables
 const RESTAURANT_SERVICE_URL = process.env.RESTAURANT_SERVICE_URL;
@@ -330,6 +332,12 @@ const placeOrder = async (req, res) => {
         return res.status(201).json(newOrder);
       }
 
+      // Sanitize user data before embedding in HTML
+      const safeCustomerName = sanitizeHtml(customer.name, { allowedTags: [], allowedAttributes: {} });
+      const safeOrderId = sanitizeHtml(newOrder._id.toString(), { allowedTags: [], allowedAttributes: {} });
+      const safeTotalPrice = sanitizeHtml(newOrder.totalPrice.toString(), { allowedTags: [], allowedAttributes: {} });
+      const safeOrderStatus = sanitizeHtml(newOrder.status, { allowedTags: [], allowedAttributes: {} });
+
       const notifications = [
         {
           type: "email",
@@ -339,15 +347,15 @@ const placeOrder = async (req, res) => {
             <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <h2 style="color: #333333; margin-bottom: 20px;">Order Confirmation</h2>
                 
-                <p style="color: #666666; margin-bottom: 20px;">Dear ${customer.name},</p>
+                <p style="color: #666666; margin-bottom: 20px;">Dear ${safeCustomerName},</p>
                 
                 <p style="color: #666666; margin-bottom: 20px;">Thank you for placing your order with us!</p>
                 
                 <div style="background-color: #f5f5f5; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
                     <h3 style="color: #333333; margin-bottom: 15px;">Order Details</h3>
-                    <p style="color: #666666; margin: 5px 0;"><strong>Order ID:</strong> #${newOrder._id}</p>
-                    <p style="color: #666666; margin: 5px 0;"><strong>Total Amount:</strong> $${newOrder.totalPrice}</p>
-                    <p style="color: #666666; margin: 5px 0;"><strong>Status:</strong> ${newOrder.status}</p>
+                    <p style="color: #666666; margin: 5px 0;"><strong>Order ID:</strong> #${safeOrderId}</p>
+                    <p style="color: #666666; margin: 5px 0;"><strong>Total Amount:</strong> $${safeTotalPrice}</p>
+                    <p style="color: #666666; margin: 5px 0;"><strong>Status:</strong> ${safeOrderStatus}</p>
                 </div>
                 
                 <p style="color: #666666; margin-bottom: 20px;">We will notify you once your order is confirmed by the restaurant.</p>
@@ -363,21 +371,21 @@ const placeOrder = async (req, res) => {
         {
           type: "sms",
           phone: customer.phone,
-          message: `Order Confirmation: Your order #${newOrder._id} has been placed successfully. Total: $${newOrder.totalPrice}. We'll notify you when the restaurant confirms. Thank you!`,
+          message: `Order Confirmation: Your order #${safeOrderId} has been placed successfully. Total: $${safeTotalPrice}. We'll notify you when the restaurant confirms. Thank you!`,
         },
         {
           type: "whatsapp",
           phone: customer.phone,
           message: `🍽️ *Order Confirmation*
 
-Hello ${customer.name},
+Hello ${safeCustomerName},
 
 Your order has been placed successfully!
 
 📋 *Order Details:*
-Order ID: #${newOrder._id}
-Total Amount: $${newOrder.totalPrice}
-Status: *${newOrder.status}*
+Order ID: #${safeOrderId}
+Total Amount: $${safeTotalPrice}
+Status: *${safeOrderStatus}*
 
 We'll notify you once the restaurant confirms your order.
 
@@ -553,6 +561,12 @@ const updateOrder = async (req, res) => {
       // Default message if status is not in the predefined list
       const statusMessage = statusMessages[status] || "has been updated";
 
+      // Sanitize user data before embedding in HTML
+      const safeCustomerName = sanitizeHtml(customer.name, { allowedTags: [], allowedAttributes: {} });
+      const safeOrderId = sanitizeHtml(order._id.toString(), { allowedTags: [], allowedAttributes: {} });
+      const safeOrderStatus = sanitizeHtml(status, { allowedTags: [], allowedAttributes: {} });
+      const safeStatusMessage = sanitizeHtml(statusMessage, { allowedTags: [], allowedAttributes: {} });
+
       const notifications = [
         {
           type: "email",
@@ -562,15 +576,15 @@ const updateOrder = async (req, res) => {
               <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                   <h2 style="color: #333333; margin-bottom: 20px;">Order Status Update</h2>
                   
-                  <p style="color: #666666; margin-bottom: 20px;">Dear ${customer.name},</p>
+                  <p style="color: #666666; margin-bottom: 20px;">Dear ${safeCustomerName},</p>
                   
                   <p style="color: #666666; margin-bottom: 20px;">Your order status has been updated!</p>
                   
                   <div style="background-color: #f5f5f5; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
                       <h3 style="color: #333333; margin-bottom: 15px;">Order Details</h3>
-                      <p style="color: #666666; margin: 5px 0;"><strong>Order ID:</strong> #${order._id}</p>
-                      <p style="color: #666666; margin: 5px 0;"><strong>New Status:</strong> ${status}</p>
-                      <p style="color: #666666; margin: 5px 0;">Your order ${statusMessage}</p>
+                      <p style="color: #666666; margin: 5px 0;"><strong>Order ID:</strong> #${safeOrderId}</p>
+                      <p style="color: #666666; margin: 5px 0;"><strong>New Status:</strong> ${safeOrderStatus}</p>
+                      <p style="color: #666666; margin: 5px 0;">Your order ${safeStatusMessage}</p>
                   </div>
                   
                   <p style="color: #666666; margin-bottom: 20px;">We'll keep you updated on your order's progress.</p>
@@ -584,21 +598,21 @@ const updateOrder = async (req, res) => {
         {
           type: "sms",
           phone: customer.phone,
-          message: `Order Update: Your order #${order._id} ${statusMessage}. We'll notify you of any further updates.`,
+          message: `Order Update: Your order #${safeOrderId} ${safeStatusMessage}. We'll notify you of any further updates.`,
         },
         {
           type: "whatsapp",
           phone: customer.phone,
           message: `📦 *Order Status Update*
 
-Hello ${customer.name},
+Hello ${safeCustomerName},
 
 Your order status has been updated!
 
 📋 *Order Details:*
-Order ID: #${order._id}
-Status: *${status}*
-Your order ${statusMessage}
+Order ID: #${safeOrderId}
+Status: *${safeOrderStatus}*
+Your order ${safeStatusMessage}
 
 We'll keep you updated on your order's progress.
 
