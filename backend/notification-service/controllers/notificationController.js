@@ -1,8 +1,10 @@
+
 const Notification = require("../models/Notification");
 const nodemailer = require("nodemailer");
 const twilio = require("twilio");
 require("dotenv").config();
 const mongoose = require("mongoose");
+const sanitizeHtml = require("sanitize-html");
 
 // Setup Email Transporter
 const transporter = nodemailer.createTransport({
@@ -25,12 +27,21 @@ const sendEmail = async (email, subject, message) => {
   if (!email) return false;
 
   try {
+    // Sanitize the message to prevent XSS
+    const sanitizedMessage = sanitizeHtml(message, {
+      allowedTags: ["b", "i", "em", "strong", "a", "p", "ul", "ol", "li", "br"],
+      allowedAttributes: {
+        a: ["href", "name", "target"],
+      },
+      allowedSchemes: ["http", "https", "mailto"],
+    });
+
     const info = await transporter.sendMail({
       from: `"EatEase" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: subject,
       text: message,
-      html: `<p>${message}</p>`,
+      html: `<p>${sanitizedMessage}</p>`,
     });
 
     console.log(`Email sent to ${email}: ${info.messageId}`);
