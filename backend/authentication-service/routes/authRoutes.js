@@ -10,13 +10,14 @@ const {
   deleteUser,
 } = require("../controllers/authController");
 const authMiddleware = require("../middleware/authMiddleware");
+const { authLimiter, registerLimiter, oauthLimiter } = require("../middleware/rateLimiter");
 
 const router = express.Router();
 
-//  Public Routes
-router.post("/register", register);
-router.post("/login", login);
-router.post("/google-auth", googleAuth);
+//  Public Routes with Rate Limiting
+router.post("/register", registerLimiter, register);
+router.post("/login", authLimiter, login);
+router.post("/google-auth", oauthLimiter, googleAuth);
 
 //  Protected Routes
 router.get("/users/:id", authMiddleware, getUserById);

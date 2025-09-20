@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { logAuthSuccess, logAuthFailure, logOAuthEvent, logSecurityEvent } = require("../utils/logger");
 
 //  Register a New User
 const register = async (req, res) => {
@@ -75,8 +76,17 @@ const register = async (req, res) => {
       },
       token,
     });
+
+    // Log successful registration
+    logAuthSuccess(result._id, result.email, 'local_registration');
   } catch (error) {
     console.error("Error registering user:", error);
+    logSecurityEvent('registration_error', {
+      email: req.body.email,
+      error: error.message,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
     res.status(500).json({ message: "Error registering user" });
   }
 };
@@ -99,6 +109,7 @@ const login = async (req, res) => {
     }
 
     if (!user) {
+      logAuthFailure(email, 'user_not_found', req.ip, req.get('User-Agent'));
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
@@ -106,6 +117,7 @@ const login = async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
+      logAuthFailure(email, 'invalid_password', req.ip, req.get('User-Agent'));
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
@@ -129,8 +141,17 @@ const login = async (req, res) => {
         longitude: user.longitude,
       },
     });
+
+    // Log successful login
+    logAuthSuccess(user._id, user.email, 'local_login');
   } catch (error) {
     console.error("Error during login:", error);
+    logSecurityEvent('login_error', {
+      email: req.body.email,
+      error: error.message,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
     res.status(500).json({ message: "Login failed" });
   }
 };
@@ -289,6 +310,9 @@ const googleAuth = async (req, res) => {
           longitude: user.longitude,
         },
       });
+
+      // Log Google OAuth event for existing user
+      logOAuthEvent('google_login_success', email, 'google', { userId: user._id });
     } else {
       // User doesn't exist, create new user
       // Hash a placeholder password for Google users
@@ -334,9 +358,18 @@ const googleAuth = async (req, res) => {
         },
         token,
       });
+
+      // Log Google OAuth event for new user
+      logOAuthEvent('google_registration_success', email, 'google', { userId: result._id });
     }
   } catch (error) {
     console.error("Error with Google authentication:", error);
+    logSecurityEvent('google_oauth_error', {
+      email: req.body.email,
+      error: error.message,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
     res.status(500).json({ message: "Google authentication failed" });
   }
 };
