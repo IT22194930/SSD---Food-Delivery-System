@@ -70,11 +70,7 @@ const DeliveryMap = ({
       // Add markers for locations
       // Restaurant marker
       const restaurantMarker = new tt.Marker({
-        element: createMarkerElement(
-          "Restaurant",
-          "bg-red-500",
-          restaurantIcon
-        ),
+        element: createMarkerElement("Restaurant", "bg-red-500", "restaurant"),
         anchor: "bottom",
       })
         .setLngLat(restaurantLocation)
@@ -83,7 +79,7 @@ const DeliveryMap = ({
 
       // Customer marker
       const customerMarker = new tt.Marker({
-        element: createMarkerElement("Me", "bg-green-500", customerIcon),
+        element: createMarkerElement("Me", "bg-green-500", "customer"),
         anchor: "bottom",
       })
         .setLngLat(customerLocation)
@@ -104,7 +100,7 @@ const DeliveryMap = ({
           element: createMarkerElement(
             "Delivery Person",
             "bg-blue-500",
-            deliveryIcon
+            "delivery"
           ),
           anchor: "bottom",
         })
@@ -191,37 +187,91 @@ const DeliveryMap = ({
   }, [map, restaurantLocation, customerLocation, deliveryPersonLocation]);
 
   // SVG Icons for markers
-  const restaurantIcon = `
-    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-    <g>
-        <path fill="none" d="M0 0h24v24H0z"/>
-        <path d="M21 2v20h-2v-8h-3V7a5 5 0 0 1 5-5zM9 13.9V22H7v-8.1A5.002 5.002 0 0 1 3 9V3h2v7h2V3h2v7h2V3h2v6a5.002 5.002 0 0 1-4 4.9z"/>
-    </g>
-</svg>
-  `;
+  // SVG icon creators
+  function createRestaurantIcon() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "w-6 h-6");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "currentColor");
+    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    const path1 = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path"
+    );
+    path1.setAttribute("fill", "none");
+    path1.setAttribute("d", "M0 0h24v24H0z");
+    const path2 = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path"
+    );
+    path2.setAttribute(
+      "d",
+      "M21 2v20h-2v-8h-3V7a5 5 0 0 1 5-5zM9 13.9V22H7v-8.1A5.002 5.002 0 0 1 3 9V3h2v7h2V3h2v7h2V3h2v6a5.002 5.002 0 0 1-4 4.9z"
+    );
+    g.appendChild(path1);
+    g.appendChild(path2);
+    svg.appendChild(g);
+    return svg;
+  }
 
-  const customerIcon = `
-    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-    </svg>
-  `;
+  function createCustomerIcon() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "w-6 h-6");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "currentColor");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute(
+      "d",
+      "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"
+    );
+    svg.appendChild(path);
+    return svg;
+  }
 
-  const deliveryIcon = `
-    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M19 7c0-1.1-.9-2-2-2h-3v2h3v2.65L13.52 14H10V9H6c-2.21 0-4 1.79-4 4v3h2c0 1.66 1.34 3 3 3s3-1.34 3-3h4.48L19 10.35V7zM7 17c-.55 0-1-.45-1-1h2c0 .55-.45 1-1 1z"/>
-      <path d="M10 6H5V4h5v2zm9 7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
-    </svg>
-  `;
+  function createDeliveryIcon() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "w-6 h-6");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "currentColor");
+    const path1 = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path"
+    );
+    path1.setAttribute(
+      "d",
+      "M19 7c0-1.1-.9-2-2-2h-3v2h3v2.65L13.52 14H10V9H6c-2.21 0-4 1.79-4 4v3h2c0 1.66 1.34 3 3 3s3-1.34 3-3h4.48L19 10.35V7zM7 17c-.55 0-1-.45-1-1h2c0 .55-.45 1-1 1z"
+    );
+    const path2 = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path"
+    );
+    path2.setAttribute(
+      "d",
+      "M10 6H5V4h5v2zm9 7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"
+    );
+    svg.appendChild(path1);
+    svg.appendChild(path2);
+    return svg;
+  }
 
-  const createMarkerElement = (label, color, icon) => {
+  const createMarkerElement = (label, color, iconType) => {
     const element = document.createElement("div");
     element.className = `relative flex flex-col items-center`;
 
     const marker = document.createElement("div");
     marker.className = `w-10 h-10 rounded-full ${color} flex items-center justify-center text-white shadow-lg`;
 
-    // Add icon
-    marker.innerHTML = icon;
+    // Add icon using DOM API (fix Insecure-document-method vulnerability)
+    let iconEl;
+    if (iconType === "restaurant") {
+      iconEl = createRestaurantIcon();
+    } else if (iconType === "customer") {
+      iconEl = createCustomerIcon();
+    } else if (iconType === "delivery") {
+      iconEl = createDeliveryIcon();
+    }
+    if (iconEl) marker.appendChild(iconEl);
 
     const labelElement = document.createElement("div");
     labelElement.className =

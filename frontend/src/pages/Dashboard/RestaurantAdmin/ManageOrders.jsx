@@ -428,7 +428,7 @@ const ManageOrders = () => {
                             {restaurant.registrationStatus
                               .charAt(0)
                               .toUpperCase() +
-                              restaurant.registrationStatus.slice(1)}
+                              restaurant.registrationStatus?.slice(1)}
                           </span>
                         </div>
                       </div>
@@ -472,7 +472,7 @@ const ManageOrders = () => {
                               <div className="flex items-center justify-between">
                                 <div className="space-y-1">
                                   <div className="text-sm font-medium text-gray-900">
-                                    {order._id.slice(-6).toUpperCase()}
+                                    {order._id?.slice(-6).toUpperCase()}
                                   </div>
                                   <div className="text-sm text-gray-500">
                                     {formatDate(order.createdAt)}

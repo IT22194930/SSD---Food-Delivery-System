@@ -32,5 +32,5 @@ app.use(
 
 app.use("/api/deliveries", deliveryRoutes);
 
-const PORT = process.env.PORT || 3004;
+const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Delivery Service running on port ${PORT}`));

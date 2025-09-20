@@ -270,7 +270,7 @@ const ManageRestaurants = () => {
                   )}`}
                 >
                   {restaurant.registrationStatus.charAt(0).toUpperCase() +
-                    restaurant.registrationStatus.slice(1)}
+                    restaurant.registrationStatus?.slice(1)}
                 </span>
                 <span className="text-sm text-gray-500">
                   Registered:{" "}

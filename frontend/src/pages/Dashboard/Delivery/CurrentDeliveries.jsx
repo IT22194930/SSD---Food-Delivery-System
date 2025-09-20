@@ -466,7 +466,7 @@ const CurrentDeliveries = () => {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold">
-                  Order #{delivery.order?._id.slice(-6) || "N/A"}
+                  Order #{delivery.order?._id?.slice(-6) || "N/A"}
                 </h3>
                 <span
                   className={`px-3 py-1 rounded-full text-sm ${
