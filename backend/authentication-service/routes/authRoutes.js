@@ -20,13 +20,14 @@ const {
   paramIdSchema,
   paramEmailSchema
 } = require("../middleware/validation");
+const { authLimiter, registerLimiter, oauthLimiter } = require("../middleware/rateLimiter");
 
 const router = express.Router();
 
-//  Public Routes
-router.post("/register", validate(registerSchema), register);
-router.post("/login", validate(loginSchema), login);
-router.post("/google-auth", validate(googleAuthSchema), googleAuth);
+//  Public Routes with Validation and Rate Limiting
+router.post("/register", registerLimiter, validate(registerSchema), register);
+router.post("/login", authLimiter, validate(loginSchema), login);
+router.post("/google-auth", oauthLimiter, validate(googleAuthSchema), googleAuth);
 
 //  Protected Routes
 router.get("/users/:id", sanitizeParams, validate(paramIdSchema, 'params'), authMiddleware, getUserById);
