@@ -1,6 +1,9 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
+const { sanitizeInput } = require("../middleware/validation");
+const { logAuthSuccess, logAuthFailure, logOAuthEvent, logSecurityEvent } = require("../utils/logger");
 
 //  Register a New User
 const register = async (req, res) => {
@@ -28,8 +31,8 @@ const register = async (req, res) => {
       return res.status(400).json({ message: "Invalid role specified" });
     }
 
-    // Check if email already exists
-    const existingUser = await User.findOne({ email });
+    // Check if email already exists - using $eq operator to prevent NoSQL injection
+    const existingUser = await User.findOne({ email: { $eq: email } });
     if (existingUser) {
       return res.status(400).json({ message: "Email already registered" });
     }
@@ -75,8 +78,17 @@ const register = async (req, res) => {
       },
       token,
     });
+
+    // Log successful registration
+    logAuthSuccess(result._id, result.email, 'local_registration');
   } catch (error) {
     console.error("Error registering user:", error);
+    logSecurityEvent('registration_error', {
+      email: req.body.email,
+      error: error.message,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
     res.status(500).json({ message: "Error registering user" });
   }
 };
@@ -86,8 +98,8 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user by email
-    const user = await User.findOne({ email });
+    // Find user by email - using $eq operator to prevent NoSQL injection
+    const user = await User.findOne({ email: { $eq: email } });
     if (user) {
       console.log("User details:", {
         id: user._id,
@@ -99,6 +111,7 @@ const login = async (req, res) => {
     }
 
     if (!user) {
+      logAuthFailure(email, 'user_not_found', req.ip, req.get('User-Agent'));
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
@@ -106,6 +119,7 @@ const login = async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
+      logAuthFailure(email, 'invalid_password', req.ip, req.get('User-Agent'));
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
@@ -129,8 +143,17 @@ const login = async (req, res) => {
         longitude: user.longitude,
       },
     });
+
+    // Log successful login
+    logAuthSuccess(user._id, user.email, 'local_login');
   } catch (error) {
     console.error("Error during login:", error);
+    logSecurityEvent('login_error', {
+      email: req.body.email,
+      error: error.message,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
     res.status(500).json({ message: "Login failed" });
   }
 };
@@ -138,7 +161,12 @@ const login = async (req, res) => {
 //  Get User by ID
 const getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select("-password");
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+
+    const user = await User.findOne({ _id: { $eq: req.params.id } }).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json(user);
@@ -156,7 +184,9 @@ const getUserByEmail = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    const user = await User.findOne({ email });
+    // Sanitize and use $eq operator to prevent NoSQL injection
+    const sanitizedEmail = sanitizeInput(email);
+    const user = await User.findOne({ email: { $eq: sanitizedEmail } });
     if (user) {
       res.json(user);
     } else {
@@ -212,8 +242,13 @@ const updateUser = async (req, res) => {
       });
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: { $eq: req.params.id } },
       { name, email, role, address, phone, photoUrl },
       { new: true }
     ).select('-password'); // Don't return password
@@ -234,7 +269,12 @@ const updateUser = async (req, res) => {
 //  Delete User
 const deleteUser = async (req, res) => {
   try {
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+
+    const deletedUser = await User.findOneAndDelete({ _id: { $eq: req.params.id } });
     if (!deletedUser)
       return res.status(404).json({ message: "User not found" });
 
@@ -255,8 +295,8 @@ const googleAuth = async (req, res) => {
       return res.status(400).json({ message: "Name and email are required" });
     }
 
-    // Check if user already exists
-    let user = await User.findOne({ email });
+    // Check if user already exists - using $eq operator to prevent NoSQL injection
+    let user = await User.findOne({ email: { $eq: email } });
     
     if (user) {
       // User exists, update their info if needed and return login response
@@ -289,6 +329,9 @@ const googleAuth = async (req, res) => {
           longitude: user.longitude,
         },
       });
+
+      // Log Google OAuth event for existing user
+      logOAuthEvent('google_login_success', email, 'google', { userId: user._id });
     } else {
       // User doesn't exist, create new user
       // Hash a placeholder password for Google users
@@ -334,9 +377,18 @@ const googleAuth = async (req, res) => {
         },
         token,
       });
+
+      // Log Google OAuth event for new user
+      logOAuthEvent('google_registration_success', email, 'google', { userId: result._id });
     }
   } catch (error) {
     console.error("Error with Google authentication:", error);
+    logSecurityEvent('google_oauth_error', {
+      email: req.body.email,
+      error: error.message,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
     res.status(500).json({ message: "Google authentication failed" });
   }
 };
