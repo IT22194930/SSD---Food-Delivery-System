@@ -1,4 +1,3 @@
-
 const axios = require("axios");
 const Order = require("../models/Order");
 require("dotenv").config();
@@ -224,6 +223,30 @@ const sendCustomerNotification = async (order, token) => {
 const placeOrder = async (req, res) => {
   try {
     console.log("🔍 Starting order placement...");
+
+    // Sanitize req.body fields to prevent XSS
+    const sanitizeField = (value) =>
+      typeof value === "string"
+        ? sanitizeHtml(value, { allowedTags: [], allowedAttributes: {} })
+        : value;
+    const sanitizeObject = (obj) => {
+      if (!obj || typeof obj !== "object") return obj;
+      const sanitized = {};
+      for (const key in obj) {
+        if (typeof obj[key] === "string") {
+          sanitized[key] = sanitizeField(obj[key]);
+        } else if (Array.isArray(obj[key])) {
+          sanitized[key] = obj[key].map(sanitizeObject);
+        } else if (typeof obj[key] === "object") {
+          sanitized[key] = sanitizeObject(obj[key]);
+        } else {
+          sanitized[key] = obj[key];
+        }
+      }
+      return sanitized;
+    };
+
+    const sanitizedBody = sanitizeObject(req.body);
     const {
       restaurant,
       items,
@@ -231,7 +254,7 @@ const placeOrder = async (req, res) => {
       paymentMethod,
       cardDetails,
       deliveryAddress,
-    } = req.body;
+    } = sanitizedBody;
 
     // Validate required fields
     if (!restaurant || !items || !totalPrice || !paymentMethod) {
@@ -279,6 +302,24 @@ const placeOrder = async (req, res) => {
         }
       );
       customer = customerResponse.data;
+      // Sanitize customer fields to prevent XSS
+      if (customer && typeof customer === "object") {
+        if (customer.name)
+          customer.name = sanitizeHtml(customer.name, {
+            allowedTags: [],
+            allowedAttributes: {},
+          });
+        if (customer.email)
+          customer.email = sanitizeHtml(customer.email, {
+            allowedTags: [],
+            allowedAttributes: {},
+          });
+        if (customer.phone)
+          customer.phone = sanitizeHtml(customer.phone, {
+            allowedTags: [],
+            allowedAttributes: {},
+          });
+      }
       console.log(" Customer details fetched:", customer);
     } catch (error) {
       console.error("Error fetching customer details:", error);
@@ -333,10 +374,22 @@ const placeOrder = async (req, res) => {
       }
 
       // Sanitize user data before embedding in HTML
-      const safeCustomerName = sanitizeHtml(customer.name, { allowedTags: [], allowedAttributes: {} });
-      const safeOrderId = sanitizeHtml(newOrder._id.toString(), { allowedTags: [], allowedAttributes: {} });
-      const safeTotalPrice = sanitizeHtml(newOrder.totalPrice.toString(), { allowedTags: [], allowedAttributes: {} });
-      const safeOrderStatus = sanitizeHtml(newOrder.status, { allowedTags: [], allowedAttributes: {} });
+      const safeCustomerName = sanitizeHtml(customer.name, {
+        allowedTags: [],
+        allowedAttributes: {},
+      });
+      const safeOrderId = sanitizeHtml(newOrder._id.toString(), {
+        allowedTags: [],
+        allowedAttributes: {},
+      });
+      const safeTotalPrice = sanitizeHtml(newOrder.totalPrice.toString(), {
+        allowedTags: [],
+        allowedAttributes: {},
+      });
+      const safeOrderStatus = sanitizeHtml(newOrder.status, {
+        allowedTags: [],
+        allowedAttributes: {},
+      });
 
       const notifications = [
         {
@@ -562,10 +615,22 @@ const updateOrder = async (req, res) => {
       const statusMessage = statusMessages[status] || "has been updated";
 
       // Sanitize user data before embedding in HTML
-      const safeCustomerName = sanitizeHtml(customer.name, { allowedTags: [], allowedAttributes: {} });
-      const safeOrderId = sanitizeHtml(order._id.toString(), { allowedTags: [], allowedAttributes: {} });
-      const safeOrderStatus = sanitizeHtml(status, { allowedTags: [], allowedAttributes: {} });
-      const safeStatusMessage = sanitizeHtml(statusMessage, { allowedTags: [], allowedAttributes: {} });
+      const safeCustomerName = sanitizeHtml(customer.name, {
+        allowedTags: [],
+        allowedAttributes: {},
+      });
+      const safeOrderId = sanitizeHtml(order._id.toString(), {
+        allowedTags: [],
+        allowedAttributes: {},
+      });
+      const safeOrderStatus = sanitizeHtml(status, {
+        allowedTags: [],
+        allowedAttributes: {},
+      });
+      const safeStatusMessage = sanitizeHtml(statusMessage, {
+        allowedTags: [],
+        allowedAttributes: {},
+      });
 
       const notifications = [
         {
