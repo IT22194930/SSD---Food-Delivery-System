@@ -1,6 +1,8 @@
 
 const axios = require("axios");
 const Order = require("../models/Order");
+const mongoose = require("mongoose");
+const { sanitizeInput } = require("../middleware/validation");
 require("dotenv").config();
 const sanitizeHtml = require("sanitize-html");
 
@@ -24,7 +26,7 @@ const getOrders = async (req, res) => {
       orders = await Order.find();
     } else if (userRole === "restaurant_admin") {
       //  Restaurant owners can only see orders for their restaurant
-      orders = await Order.find({ restaurant: userId });
+      orders = await Order.find({ restaurant: { $eq: userId } });
     } else {
       return res.status(403).json({ message: "Access denied" });
     }
@@ -41,7 +43,7 @@ const getUserOrders = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const orders = await Order.find({ customer: userId });
+    const orders = await Order.find({ customer: { $eq: userId } });
 
     // Fetch restaurant and menu data from Restaurant Service
     const ordersWithDetails = await Promise.all(
@@ -90,9 +92,14 @@ const getOrderById = async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid order ID format" });
+    }
+
     //  Allow Admins and Delivery Personnel to Fetch Any Order
     const order = await Order.findOne({
-      _id: req.params.id,
+      _id: { $eq: req.params.id },
     });
 
     if (!order) return res.status(404).json({ message: "Order not found" });
@@ -433,8 +440,13 @@ const updateOrder = async (req, res) => {
     console.log("New status:", status);
     console.log("User role:", role);
 
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid order ID format" });
+    }
+
     // Find the order
-    const order = await Order.findById(id);
+    const order = await Order.findOne({ _id: { $eq: id } });
     if (!order) {
       console.error("Order not found:", id);
       return res.status(404).json({ message: "Order not found" });
@@ -651,8 +663,17 @@ Thank you for choosing our service! `,
 //  Cancel an Order (Only if Status is `Pending`)
 const cancelOrder = async (req, res) => {
   try {
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid order ID format" });
+    }
+
     const cancelledOrder = await Order.findOneAndUpdate(
-      { _id: req.params.id, customer: req.user.id, status: "Pending" },
+      { 
+        _id: { $eq: req.params.id }, 
+        customer: { $eq: req.user.id }, 
+        status: { $eq: "Pending" }
+      },
       { status: "Cancelled" },
       { new: true }
     );
@@ -672,9 +693,14 @@ const cancelOrder = async (req, res) => {
 //  Track Order Status
 const trackOrderStatus = async (req, res) => {
   try {
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid order ID format" });
+    }
+
     const order = await Order.findOne({
-      _id: req.params.id,
-      customer: req.user.id,
+      _id: { $eq: req.params.id },
+      customer: { $eq: req.user.id },
     });
 
     if (!order) return res.status(404).json({ message: "Order not found" });
@@ -691,6 +717,11 @@ const getRestaurantOrders = async (req, res) => {
   try {
     const { restaurantId } = req.params;
     const userRole = req.user.role;
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+      return res.status(400).json({ message: "Invalid restaurant ID format" });
+    }
 
     // Check if user has permission to access these orders
     if (userRole !== "admin" && userRole !== "restaurant_admin") {
@@ -719,7 +750,7 @@ const getRestaurantOrders = async (req, res) => {
     }
 
     // Fetch orders for the restaurant
-    const orders = await Order.find({ restaurant: restaurantId }).sort({
+    const orders = await Order.find({ restaurant: { $eq: restaurantId } }).sort({
       createdAt: -1,
     }); // Sort by newest first
 
