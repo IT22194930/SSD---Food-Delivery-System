@@ -1,7 +1,5 @@
 const axios = require("axios");
 const Order = require("../models/Order");
-const mongoose = require("mongoose");
-const { sanitizeInput } = require("../middleware/validation");
 require("dotenv").config();
 const sanitizeHtml = require("sanitize-html");
 
@@ -25,7 +23,7 @@ const getOrders = async (req, res) => {
       orders = await Order.find();
     } else if (userRole === "restaurant_admin") {
       //  Restaurant owners can only see orders for their restaurant
-      orders = await Order.find({ restaurant: { $eq: userId } });
+      orders = await Order.find({ restaurant: userId });
     } else {
       return res.status(403).json({ message: "Access denied" });
     }
@@ -42,7 +40,7 @@ const getUserOrders = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const orders = await Order.find({ customer: { $eq: userId } });
+    const orders = await Order.find({ customer: userId });
 
     // Fetch restaurant and menu data from Restaurant Service
     const ordersWithDetails = await Promise.all(
@@ -91,14 +89,9 @@ const getOrderById = async (req, res) => {
     const userId = req.user.id;
     const userRole = req.user.role;
 
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ message: "Invalid order ID format" });
-    }
-
     //  Allow Admins and Delivery Personnel to Fetch Any Order
     const order = await Order.findOne({
-      _id: { $eq: req.params.id },
+      _id: req.params.id,
     });
 
     if (!order) return res.status(404).json({ message: "Order not found" });
@@ -230,30 +223,6 @@ const sendCustomerNotification = async (order, token) => {
 const placeOrder = async (req, res) => {
   try {
     console.log("🔍 Starting order placement...");
-
-    // Sanitize req.body fields to prevent XSS
-    const sanitizeField = (value) =>
-      typeof value === "string"
-        ? sanitizeHtml(value, { allowedTags: [], allowedAttributes: {} })
-        : value;
-    const sanitizeObject = (obj) => {
-      if (!obj || typeof obj !== "object") return obj;
-      const sanitized = {};
-      for (const key in obj) {
-        if (typeof obj[key] === "string") {
-          sanitized[key] = sanitizeField(obj[key]);
-        } else if (Array.isArray(obj[key])) {
-          sanitized[key] = obj[key].map(sanitizeObject);
-        } else if (typeof obj[key] === "object") {
-          sanitized[key] = sanitizeObject(obj[key]);
-        } else {
-          sanitized[key] = obj[key];
-        }
-      }
-      return sanitized;
-    };
-
-    const sanitizedBody = sanitizeObject(req.body);
     const {
       restaurant,
       items,
@@ -261,7 +230,7 @@ const placeOrder = async (req, res) => {
       paymentMethod,
       cardDetails,
       deliveryAddress,
-    } = sanitizedBody;
+    } = req.body;
 
     // Validate required fields
     if (!restaurant || !items || !totalPrice || !paymentMethod) {
@@ -493,13 +462,8 @@ const updateOrder = async (req, res) => {
     console.log("New status:", status);
     console.log("User role:", role);
 
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid order ID format" });
-    }
-
     // Find the order
-    const order = await Order.findOne({ _id: { $eq: id } });
+    const order = await Order.findById(id);
     if (!order) {
       console.error("Order not found:", id);
       return res.status(404).json({ message: "Order not found" });
@@ -728,17 +692,8 @@ Thank you for choosing our service! `,
 //  Cancel an Order (Only if Status is `Pending`)
 const cancelOrder = async (req, res) => {
   try {
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ message: "Invalid order ID format" });
-    }
-
     const cancelledOrder = await Order.findOneAndUpdate(
-      { 
-        _id: { $eq: req.params.id }, 
-        customer: { $eq: req.user.id }, 
-        status: { $eq: "Pending" }
-      },
+      { _id: req.params.id, customer: req.user.id, status: "Pending" },
       { status: "Cancelled" },
       { new: true }
     );
@@ -758,14 +713,9 @@ const cancelOrder = async (req, res) => {
 //  Track Order Status
 const trackOrderStatus = async (req, res) => {
   try {
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ message: "Invalid order ID format" });
-    }
-
     const order = await Order.findOne({
-      _id: { $eq: req.params.id },
-      customer: { $eq: req.user.id },
+      _id: req.params.id,
+      customer: req.user.id,
     });
 
     if (!order) return res.status(404).json({ message: "Order not found" });
@@ -782,11 +732,6 @@ const getRestaurantOrders = async (req, res) => {
   try {
     const { restaurantId } = req.params;
     const userRole = req.user.role;
-
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
-      return res.status(400).json({ message: "Invalid restaurant ID format" });
-    }
 
     // Check if user has permission to access these orders
     if (userRole !== "admin" && userRole !== "restaurant_admin") {
@@ -815,7 +760,7 @@ const getRestaurantOrders = async (req, res) => {
     }
 
     // Fetch orders for the restaurant
-    const orders = await Order.find({ restaurant: { $eq: restaurantId } }).sort({
+    const orders = await Order.find({ restaurant: restaurantId }).sort({
       createdAt: -1,
     }); // Sort by newest first
 
