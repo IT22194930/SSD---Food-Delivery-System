@@ -1,10 +1,12 @@
 const Cart = require('../models/Cart');
 const axios = require('axios');
+const mongoose = require('mongoose');
+const { sanitizeInput } = require('../middleware/validation');
 
 // Get all carts for a user
 exports.getCart = async (req, res) => {
   try {
-    const carts = await Cart.find({ userId: req.user.id });
+    const carts = await Cart.find({ userId: { $eq: req.user.id } });
     res.json(carts);
   } catch (error) {
     console.error('Cart Error:', error);
@@ -33,10 +35,18 @@ exports.addToCart = async (req, res) => {
       return res.status(404).json({ message: 'Restaurant not found' });
     }
 
+    // Validate ObjectId formats
+    if (!mongoose.Types.ObjectId.isValid(menuItemId)) {
+      return res.status(400).json({ message: 'Invalid menu item ID format' });
+    }
+    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+      return res.status(400).json({ message: 'Invalid restaurant ID format' });
+    }
+
     // Find or create cart for this restaurant
     let cart = await Cart.findOne({ 
-      userId: req.user.id,
-      restaurantId: restaurantId
+      userId: { $eq: req.user.id },
+      restaurantId: { $eq: restaurantId }
     });
 
     if (!cart) {
@@ -92,9 +102,17 @@ exports.updateCartItem = async (req, res) => {
   try {
     const { menuItemId, quantity, restaurantId } = req.body;
     
+    // Validate ObjectId formats
+    if (!mongoose.Types.ObjectId.isValid(menuItemId)) {
+      return res.status(400).json({ message: 'Invalid menu item ID format' });
+    }
+    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+      return res.status(400).json({ message: 'Invalid restaurant ID format' });
+    }
+    
     const cart = await Cart.findOne({ 
-      userId: req.user.id,
-      restaurantId: restaurantId
+      userId: { $eq: req.user.id },
+      restaurantId: { $eq: restaurantId }
     });
 
     if (!cart) {
@@ -114,7 +132,7 @@ exports.updateCartItem = async (req, res) => {
       
       // If cart is empty after removing item, delete the cart
       if (cart.items.length === 0) {
-        await Cart.deleteOne({ _id: cart._id });
+        await Cart.deleteOne({ _id: { $eq: cart._id } });
         return res.json({ message: 'Cart deleted' });
       }
     } else {
@@ -139,9 +157,17 @@ exports.removeFromCart = async (req, res) => {
   try {
     const { menuItemId, restaurantId } = req.params;
     
+    // Validate ObjectId formats
+    if (!mongoose.Types.ObjectId.isValid(menuItemId)) {
+      return res.status(400).json({ message: 'Invalid menu item ID format' });
+    }
+    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+      return res.status(400).json({ message: 'Invalid restaurant ID format' });
+    }
+    
     const cart = await Cart.findOne({ 
-      userId: req.user.id,
-      restaurantId: restaurantId
+      userId: { $eq: req.user.id },
+      restaurantId: { $eq: restaurantId }
     });
 
     if (!cart) {
@@ -154,7 +180,7 @@ exports.removeFromCart = async (req, res) => {
 
     // If cart is empty after removing item, delete the cart
     if (cart.items.length === 0) {
-      await Cart.deleteOne({ _id: cart._id });
+      await Cart.deleteOne({ _id: { $eq: cart._id } });
       return res.json({ message: 'Cart deleted' });
     }
 
@@ -176,9 +202,14 @@ exports.clearCart = async (req, res) => {
   try {
     const { restaurantId } = req.params;
     
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+      return res.status(400).json({ message: 'Invalid restaurant ID format' });
+    }
+    
     await Cart.deleteOne({ 
-      userId: req.user.id,
-      restaurantId: restaurantId
+      userId: { $eq: req.user.id },
+      restaurantId: { $eq: restaurantId }
     });
 
     res.json({ message: 'Cart cleared successfully' });

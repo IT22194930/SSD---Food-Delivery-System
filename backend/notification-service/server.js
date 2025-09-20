@@ -8,6 +8,7 @@ dotenv.config();
 connectDB();
 
 const app = express();
+app.disable("x-powered-by");
 app.use(express.json());
 // Use helmet for security headers
 app.use(

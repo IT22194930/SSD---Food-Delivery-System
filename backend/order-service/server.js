@@ -10,6 +10,8 @@ const app = express();
 
 connectDB();
 
+app.disable("x-powered-by");
+
 app.use(express.json());
 // Use helmet for security headers
 app.use(

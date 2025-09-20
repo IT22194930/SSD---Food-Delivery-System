@@ -7,6 +7,8 @@ const deliveryRoutes = require("./routes/deliveryRoutes");
 dotenv.config();
 const app = express();
 
+app.disable("x-powered-by");
+
 connectDB();
 
 app.use(express.json());

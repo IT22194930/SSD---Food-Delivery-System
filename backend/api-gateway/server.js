@@ -7,8 +7,10 @@ const gatewayRoutes = require("./routes/gatewayRoutes");
 
 dotenv.config();
 const app = express();
+app.disable("x-powered-by");
 
 // Vulnerability 1 - CORS configuration
+
 const allowedOrigins = [process.env.CLIENT_URL || "http://localhost:3030"];
 
 app.use(

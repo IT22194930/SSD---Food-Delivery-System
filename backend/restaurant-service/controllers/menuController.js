@@ -1,5 +1,7 @@
 const Menu = require("../models/Menu");
 const Restaurant = require("../models/Restaurant");
+const mongoose = require("mongoose");
+const { sanitizeInput } = require("../middleware/validation");
 
 //  Get All Menu Items
 const getAllMenus = async (req, res) => {
@@ -15,16 +17,21 @@ const getAllMenus = async (req, res) => {
 //  Get Menu Items by Restaurant (Only if owned by the user)
 const getMenusByRestaurant = async (req, res) => {
   try {
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.restaurantId)) {
+      return res.status(400).json({ message: "Invalid restaurant ID format" });
+    }
+
     const restaurant = await Restaurant.findOne({
-      _id: req.params.restaurantId,
-      owner: req.user.id,
+      _id: { $eq: req.params.restaurantId },
+      owner: { $eq: req.user.id },
     });
     if (!restaurant)
       return res
         .status(404)
         .json({ message: "Restaurant not found or not authorized" });
 
-    const menus = await Menu.find({ restaurant: req.params.restaurantId });
+    const menus = await Menu.find({ restaurant: { $eq: req.params.restaurantId } });
     res.json(menus);
   } catch (error) {
     console.error("Error fetching menu items:", error);
@@ -35,7 +42,12 @@ const getMenusByRestaurant = async (req, res) => {
 //  Get a Single Menu Item by ID
 const getMenuById = async (req, res) => {
   try {
-    const menu = await Menu.findById(req.params.id);
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid menu item ID format" });
+    }
+
+    const menu = await Menu.findOne({ _id: { $eq: req.params.id } });
     if (!menu) return res.status(404).json({ message: "Menu item not found" });
     res.json(menu);
   } catch (error) {
@@ -47,9 +59,14 @@ const getMenuById = async (req, res) => {
 //  Add a Menu Item (Only if owned by the user)
 const addMenuItem = async (req, res) => {
   try {
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.restaurantId)) {
+      return res.status(400).json({ message: "Invalid restaurant ID format" });
+    }
+
     const restaurant = await Restaurant.findOne({
-      _id: req.params.restaurantId,
-      owner: req.user.id,
+      _id: { $eq: req.params.restaurantId },
+      owner: { $eq: req.user.id },
     });
     if (!restaurant)
       return res
@@ -66,9 +83,10 @@ const addMenuItem = async (req, res) => {
     });
     await newMenuItem.save();
 
-    await Restaurant.findByIdAndUpdate(req.params.restaurantId, {
-      $push: { menu: newMenuItem._id },
-    });
+    await Restaurant.findOneAndUpdate(
+      { _id: { $eq: req.params.restaurantId } },
+      { $push: { menu: newMenuItem._id } }
+    );
 
     res.status(201).json(newMenuItem);
   } catch (error) {
@@ -80,8 +98,13 @@ const addMenuItem = async (req, res) => {
 //  Update a Menu Item (Only if owned by the user)
 const updateMenuItem = async (req, res) => {
   try {
-    const updatedMenuItem = await Menu.findByIdAndUpdate(
-      req.params.id,
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid menu item ID format" });
+    }
+
+    const updatedMenuItem = await Menu.findOneAndUpdate(
+      { _id: { $eq: req.params.id } },
       req.body,
       { new: true }
     );
@@ -97,14 +120,20 @@ const updateMenuItem = async (req, res) => {
 //  Delete a Menu Item (Only if owned by the user)
 const deleteMenuItem = async (req, res) => {
   try {
-    const menuItem = await Menu.findById(req.params.id);
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid menu item ID format" });
+    }
+
+    const menuItem = await Menu.findOne({ _id: { $eq: req.params.id } });
     if (!menuItem)
       return res.status(404).json({ message: "Menu item not found" });
 
-    await Restaurant.findByIdAndUpdate(menuItem.restaurant, {
-      $pull: { menu: menuItem._id },
-    });
-    await Menu.findByIdAndDelete(req.params.id);
+    await Restaurant.findOneAndUpdate(
+      { _id: { $eq: menuItem.restaurant } },
+      { $pull: { menu: menuItem._id } }
+    );
+    await Menu.findOneAndDelete({ _id: { $eq: req.params.id } });
 
     res.json({ message: "Menu item deleted successfully" });
   } catch (error) {
