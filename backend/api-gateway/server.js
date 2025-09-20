@@ -27,10 +27,43 @@ app.use(
   })
 );
 //-----------------------------------------------//
-app.use(helmet());
+app.use(
+  helmet({
+    frameguard: { action: "deny" },
+    hsts: { maxAge: 63072000, includeSubDomains: true, preload: true },
+    contentTypeOptions: true,
+    hidePoweredBy: true,
+  })
+);
+
+app.use(
+  helmet.contentSecurityPolicy({
+    useDefaults: false,
+    directives: {
+      "default-src": ["'self'"],
+      "script-src": ["'self'"],
+      "style-src": ["'self'"],
+      "font-src": ["'self'"],
+      "img-src": ["'self'"],
+      "frame-ancestors": ["'none'"],
+      "object-src": ["'none'"],
+      "base-uri": ["'self'"],
+    },
+  })
+);
 app.use(morgan("dev"));
 
 app.use("/", gatewayRoutes);
 
 const PORT = process.env.PORT;
+// Custom error handler to avoid leaking sensitive info
+app.use(function (err, req, res, next) {
+  const errorId = Date.now();
+  console.error(`Error [${errorId}]:`, err);
+  res.status(500).json({
+    error: "An unexpected error occurred.",
+    reference: errorId,
+  });
+});
+
 app.listen(PORT, () => console.log(`API Gateway running on port ${PORT}`));

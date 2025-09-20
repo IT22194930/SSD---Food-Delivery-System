@@ -10,6 +10,31 @@ const app = express();
 connectDB();
 
 app.use(express.json());
+// Use helmet for security headers
+app.use(
+  helmet({
+    frameguard: { action: "deny" },
+    hsts: { maxAge: 63072000, includeSubDomains: true, preload: true },
+    contentTypeOptions: true,
+    hidePoweredBy: true,
+  })
+);
+
+app.use(
+  helmet.contentSecurityPolicy({
+    useDefaults: false,
+    directives: {
+      "default-src": ["'self'"],
+      "script-src": ["'self'"],
+      "style-src": ["'self'"],
+      "font-src": ["'self'"],
+      "img-src": ["'self'"],
+      "frame-ancestors": ["'none'"],
+      "object-src": ["'none'"],
+      "base-uri": ["'self'"],
+    },
+  })
+);
 
 // Vulnerability 1 - CORS configuration
 const allowedOrigins = [process.env.CLIENT_URL || "http://localhost:3030"];
@@ -32,6 +57,16 @@ app.use(
 //-----------------------------------------------//
 
 app.use("/api/auth", authRoutes);
+
+// Custom error handler to avoid leaking sensitive info
+app.use(function (err, req, res, next) {
+  const errorId = Date.now();
+  console.error(`Error [${errorId}]:`, err);
+  res.status(500).json({
+    error: "An unexpected error occurred.",
+    reference: errorId,
+  });
+});
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Auth Service running on port ${PORT}`));
