@@ -9,6 +9,8 @@ const app = express();
 
 connectDB();
 
+app.disable("x-powered-by");
+
 app.use(express.json());
 
 // Vulnerability 1 - CORS configuration

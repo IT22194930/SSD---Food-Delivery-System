@@ -175,23 +175,46 @@ const sendNotification = async (req, res) => {
     let userId = req.body.userId;
     let notifications = req.body.notifications;
     if (userId) {
-      userId = sanitizeHtml(userId.toString(), { allowedTags: [], allowedAttributes: {} });
+      userId = sanitizeHtml(userId.toString(), {
+        allowedTags: [],
+        allowedAttributes: {},
+      });
     }
     const sanitizedNotifications = Array.isArray(notifications)
       ? notifications.map((notification) => {
           const sanitized = { ...notification };
           if (sanitized.email) {
-            sanitized.email = sanitizeHtml(sanitized.email, { allowedTags: [], allowedAttributes: {} });
+            sanitized.email = sanitizeHtml(sanitized.email, {
+              allowedTags: [],
+              allowedAttributes: {},
+            });
           }
           if (sanitized.phone) {
-            sanitized.phone = sanitizeHtml(sanitized.phone, { allowedTags: [], allowedAttributes: {} });
+            sanitized.phone = sanitizeHtml(sanitized.phone, {
+              allowedTags: [],
+              allowedAttributes: {},
+            });
           }
           if (sanitized.subject) {
-            sanitized.subject = sanitizeHtml(sanitized.subject, { allowedTags: [], allowedAttributes: {} });
+            sanitized.subject = sanitizeHtml(sanitized.subject, {
+              allowedTags: [],
+              allowedAttributes: {},
+            });
           }
           if (sanitized.message) {
             sanitized.message = sanitizeHtml(sanitized.message, {
-              allowedTags: ["b", "i", "em", "strong", "a", "p", "ul", "ol", "li", "br"],
+              allowedTags: [
+                "b",
+                "i",
+                "em",
+                "strong",
+                "a",
+                "p",
+                "ul",
+                "ol",
+                "li",
+                "br",
+              ],
               allowedAttributes: { a: ["href", "name", "target"] },
               allowedSchemes: ["http", "https", "mailto"],
             });

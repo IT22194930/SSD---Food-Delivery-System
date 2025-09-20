@@ -10,6 +10,8 @@ const app = express();
 
 connectDB();
 
+app.disable("x-powered-by");
+
 app.use(express.json());
 // Vulnerability 1 - CORS configuration
 const allowedOrigins = [process.env.CLIENT_URL || "http://localhost:3030"];
