@@ -208,11 +208,13 @@ const getDeliveryLocation = async (req, res) => {
       order.deliveryAddress.latitude,
     ];
 
-    // Get route from TomTom Routing API
-    const tomtomApiKey = "UMDEqLx44SlvYeLWgVXryA5GlW5tVW2B";
+    //Cryptographic failures- detected-generic-api-key 
+    // Get route from TomTom Routing API using key from env
+    const tomtomApiKey = process.env.TOMTOM_API_KEY;
     const routeResponse = await axios.get(
       `https://api.tomtom.com/routing/1/calculateRoute/${restaurantLocation[1]},${restaurantLocation[0]}:${customerLocation[1]},${customerLocation[0]}/json?key=${tomtomApiKey}&routeType=fastest&traffic=true&travelMode=car&language=en-US`
     );
+    //-----------------
 
     if (!routeResponse.data.routes || !routeResponse.data.routes[0]) {
       throw new Error("Failed to get route from TomTom API");
@@ -285,11 +287,13 @@ const simulateDeliveryMovement = async (req, res) => {
       order.deliveryAddress.latitude,
     ];
 
-    // Get route from TomTom Routing API
-    const tomtomApiKey = "UMDEqLx44SlvYeLWgVXryA5GlW5tVW2B"; // Your TomTom API key
+    //Cryptographic failures- detected-generic-api-key 
+    // Get route from TomTom Routing API using key from env
+    const tomtomApiKey = process.env.TOMTOM_API_KEY;
     const routeResponse = await axios.get(
       `https://api.tomtom.com/routing/1/calculateRoute/${restaurantLocation[1]},${restaurantLocation[0]}:${customerLocation[1]},${customerLocation[0]}/json?key=${tomtomApiKey}&routeType=fastest&traffic=true&travelMode=car&language=en-US`
     );
+    //-------
 
     if (!routeResponse.data.routes || !routeResponse.data.routes[0]) {
       throw new Error("Failed to get route from TomTom API");
