@@ -1,4 +1,3 @@
-
 const Notification = require("../models/Notification");
 const nodemailer = require("nodemailer");
 const twilio = require("twilio");
@@ -174,6 +173,48 @@ const sendNotification = async (req, res) => {
 
     const { userId, notifications } = req.body;
 
+    // Sanitize notification fields to prevent XSS
+    const sanitizedNotifications = notifications.map((notification) => {
+      const sanitized = { ...notification };
+      if (sanitized.email) {
+        sanitized.email = sanitizeHtml(sanitized.email, {
+          allowedTags: [],
+          allowedAttributes: {},
+        });
+      }
+      if (sanitized.phone) {
+        sanitized.phone = sanitizeHtml(sanitized.phone, {
+          allowedTags: [],
+          allowedAttributes: {},
+        });
+      }
+      if (sanitized.subject) {
+        sanitized.subject = sanitizeHtml(sanitized.subject, {
+          allowedTags: [],
+          allowedAttributes: {},
+        });
+      }
+      if (sanitized.message) {
+        sanitized.message = sanitizeHtml(sanitized.message, {
+          allowedTags: [
+            "b",
+            "i",
+            "em",
+            "strong",
+            "a",
+            "p",
+            "ul",
+            "ol",
+            "li",
+            "br",
+          ],
+          allowedAttributes: { a: ["href", "name", "target"] },
+          allowedSchemes: ["http", "https", "mailto"],
+        });
+      }
+      return sanitized;
+    });
+
     // Validate request format
     if (!userId || !notifications || !Array.isArray(notifications)) {
       console.error("Invalid request format:", {
@@ -232,17 +273,19 @@ const sendNotification = async (req, res) => {
 
     // Send notifications
     console.log("Sending notifications...");
-    const results = await sendMultipleNotifications(notifications);
+    const results = await sendMultipleNotifications(sanitizedNotifications);
     console.log("Notification results:", results);
 
     // Save notification records
     console.log("Saving notification records...");
-    const notificationRecords = notifications.map((notification, index) => ({
-      userId: new mongoose.Types.ObjectId(userId),
-      type: notification.type,
-      message: notification.message,
-      status: results[index].success ? "Sent" : "Failed",
-    }));
+    const notificationRecords = sanitizedNotifications.map(
+      (notification, index) => ({
+        userId: new mongoose.Types.ObjectId(userId),
+        type: notification.type,
+        message: notification.message,
+        status: results[index].success ? "Sent" : "Failed",
+      })
+    );
 
     await Notification.insertMany(notificationRecords);
     console.log("Notification records saved");
