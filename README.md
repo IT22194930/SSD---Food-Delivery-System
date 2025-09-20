@@ -202,10 +202,10 @@ npm install
 npm run build
 ```
 
-## 📚 Additional Resources
+## Run Security Test
 
-- [Docker Documentation](https://docs.docker.com/)
-- [Kubernetes Documentation](https://kubernetes.io/docs/)
-- [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/)
-- [Stripe Documentation](https://stripe.com/docs)
-- [Twilio Documentation](https://www.twilio.com/docs)
+```bash
+cd backend
+cd authentication-service
+npm run test:security
+```

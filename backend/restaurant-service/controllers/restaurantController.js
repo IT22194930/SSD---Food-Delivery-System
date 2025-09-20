@@ -1,6 +1,8 @@
 const Restaurant = require("../models/Restaurant");
 const Menu = require("../models/Menu");
 const axios = require("axios");
+const mongoose = require("mongoose");
+const { sanitizeInput } = require("../middleware/validation");
 
 // Get All Restaurants
 const getRestaurants = async (req, res) => {
@@ -22,7 +24,7 @@ const getUserRestaurants = async (req, res) => {
     const userId = req.user.id;
 
     // Get user's restaurants with all details, sorted by most recent first
-    const restaurants = await Restaurant.find({ owner: userId })
+    const restaurants = await Restaurant.find({ owner: { $eq: userId } })
       .sort({ createdAt: -1 })
       .populate("menu"); // Populate the menu items
 
@@ -36,7 +38,12 @@ const getUserRestaurants = async (req, res) => {
 // Get Restaurant by ID
 const getRestaurantById = async (req, res) => {
   try {
-    const restaurant = await Restaurant.findById(req.params.id).populate(
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid restaurant ID format" });
+    }
+
+    const restaurant = await Restaurant.findOne({ _id: { $eq: req.params.id } }).populate(
       "menu"
     );
     if (!restaurant)
@@ -71,8 +78,13 @@ const updateRestaurant = async (req, res) => {
 
     // If isActive is being updated, only update that field
     if (typeof isActive === "boolean") {
-      const updatedRestaurant = await Restaurant.findByIdAndUpdate(
-        req.params.id,
+      // Validate ObjectId format
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({ message: "Invalid restaurant ID format" });
+      }
+
+      const updatedRestaurant = await Restaurant.findOneAndUpdate(
+        { _id: { $eq: req.params.id } },
         { isActive },
         { new: true }
       );
@@ -87,7 +99,12 @@ const updateRestaurant = async (req, res) => {
     }
 
     // For other updates, validate the data first
-    const restaurant = await Restaurant.findById(req.params.id);
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid restaurant ID format" });
+    }
+
+    const restaurant = await Restaurant.findOne({ _id: { $eq: req.params.id } });
     if (!restaurant) {
       console.log("Restaurant not found for full update");
       return res.status(404).json({ message: "Restaurant not found" });
@@ -102,8 +119,8 @@ const updateRestaurant = async (req, res) => {
     }
 
     // Update the restaurant with validated data
-    const updatedRestaurant = await Restaurant.findByIdAndUpdate(
-      req.params.id,
+    const updatedRestaurant = await Restaurant.findOneAndUpdate(
+      { _id: { $eq: req.params.id } },
       req.body,
       {
         new: true,
@@ -126,7 +143,12 @@ const updateRestaurant = async (req, res) => {
 // Delete a Restaurant
 const deleteRestaurant = async (req, res) => {
   try {
-    await Restaurant.findByIdAndDelete(req.params.id);
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid restaurant ID format" });
+    }
+
+    await Restaurant.findOneAndDelete({ _id: { $eq: req.params.id } });
     res.json({ message: "Restaurant deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Error deleting restaurant" });
@@ -136,12 +158,17 @@ const deleteRestaurant = async (req, res) => {
 // Get Menu Items for a Restaurant
 const getMenuItems = async (req, res) => {
   try {
-    const restaurant = await Restaurant.findById(req.params.id);
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid restaurant ID format" });
+    }
+
+    const restaurant = await Restaurant.findOne({ _id: { $eq: req.params.id } });
     if (!restaurant) {
       return res.status(404).json({ message: "Restaurant not found" });
     }
 
-    const menuItems = await Menu.find({ restaurant: req.params.id });
+    const menuItems = await Menu.find({ restaurant: { $eq: req.params.id } });
     res.json(menuItems);
   } catch (error) {
     console.error("Error fetching menu items:", error);
@@ -152,7 +179,12 @@ const getMenuItems = async (req, res) => {
 // Add Menu Item to Restaurant
 const addMenuItem = async (req, res) => {
   try {
-    const restaurant = await Restaurant.findById(req.params.id);
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid restaurant ID format" });
+    }
+
+    const restaurant = await Restaurant.findOne({ _id: { $eq: req.params.id } });
     if (!restaurant) {
       return res.status(404).json({ message: "Restaurant not found" });
     }
@@ -185,12 +217,17 @@ const addMenuItem = async (req, res) => {
 // Delete Menu Item from Restaurant
 const deleteMenuItem = async (req, res) => {
   try {
-    const menuItem = await Menu.findById(req.params.menuItemId);
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(req.params.menuItemId)) {
+      return res.status(400).json({ message: "Invalid menu item ID format" });
+    }
+
+    const menuItem = await Menu.findOne({ _id: { $eq: req.params.menuItemId } });
     if (!menuItem) {
       return res.status(404).json({ message: "Menu item not found" });
     }
 
-    const restaurant = await Restaurant.findById(menuItem.restaurant);
+    const restaurant = await Restaurant.findOne({ _id: { $eq: menuItem.restaurant } });
     if (!restaurant) {
       return res.status(404).json({ message: "Restaurant not found" });
     }
@@ -202,7 +239,7 @@ const deleteMenuItem = async (req, res) => {
       });
     }
 
-    await Menu.findByIdAndDelete(req.params.menuItemId);
+    await Menu.findOneAndDelete({ _id: { $eq: req.params.menuItemId } });
     res.json({ message: "Menu item deleted successfully" });
   } catch (error) {
     console.error("Error deleting menu item:", error);
@@ -248,8 +285,8 @@ const registerRestaurant = async (req, res) => {
     // Check if user has a pending restaurant registration
     console.log("Checking for existing restaurant registration...");
     const existingRestaurant = await Restaurant.findOne({
-      owner: userId,
-      registrationStatus: "pending",
+      owner: { $eq: userId },
+      registrationStatus: { $eq: "pending" },
     });
 
     if (existingRestaurant) {
@@ -294,7 +331,7 @@ const registerRestaurant = async (req, res) => {
 const getPendingRegistrations = async (req, res) => {
   try {
     const pendingRestaurants = await Restaurant.find({
-      registrationStatus: "pending",
+      registrationStatus: { $eq: "pending" },
     });
     res.json(pendingRestaurants);
   } catch (error) {
@@ -315,7 +352,12 @@ const updateRegistrationStatus = async (req, res) => {
       return res.status(400).json({ message: "Invalid status" });
     }
 
-    const restaurant = await Restaurant.findById(restaurantId);
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+      return res.status(400).json({ message: "Invalid restaurant ID format" });
+    }
+
+    const restaurant = await Restaurant.findOne({ _id: { $eq: restaurantId } });
     if (!restaurant) {
       return res.status(404).json({ message: "Restaurant not found" });
     }
@@ -346,9 +388,9 @@ const updateRegistrationStatus = async (req, res) => {
       try {
         // Check if user has any other approved restaurants
         const otherApprovedRestaurants = await Restaurant.find({
-          owner: restaurant.owner,
+          owner: { $eq: restaurant.owner },
           _id: { $ne: restaurant._id },
-          registrationStatus: "approved",
+          registrationStatus: { $eq: "approved" },
         });
 
         // Only change role to customer if there are no other approved restaurants
@@ -386,7 +428,7 @@ const updateRegistrationStatus = async (req, res) => {
 const getApprovedRegistrations = async (req, res) => {
   try {
     const approvedRestaurants = await Restaurant.find({
-      registrationStatus: "approved",
+      registrationStatus: { $eq: "approved" },
     });
     res.json(approvedRestaurants);
   } catch (error) {
@@ -402,7 +444,7 @@ const getApprovedRegistrations = async (req, res) => {
 const getRejectedRegistrations = async (req, res) => {
   try {
     const rejectedRestaurants = await Restaurant.find({
-      registrationStatus: "rejected",
+      registrationStatus: { $eq: "rejected" },
     });
     res.json(rejectedRestaurants);
   } catch (error) {
@@ -424,10 +466,13 @@ const getRestaurantsByCategory = async (req, res) => {
       return res.status(200).json(restaurants);
     }
 
+    // Sanitize category parameter
+    const sanitizedCategory = sanitizeInput(category);
+    
     // Find all menu items in the specified category
     const menuItems = await Menu.find({
-      category: category,
-      isAvailable: true,
+      category: { $eq: sanitizedCategory },
+      isAvailable: { $eq: true },
     }).populate("restaurant");
 
     // Get unique restaurants from the menu items
