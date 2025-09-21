@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import {
@@ -14,6 +14,7 @@ import DeliveryMap from "../components/DeliveryMap";
 import DeliverySimulation from "../components/DeliverySimulation";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import OrderBillPDF from "./Bills/OrderBillPDF";
+import { AuthContext } from "../utilities/providers/AuthProvider";
 
 const OrderDetails = () => {
   const { orderId } = useParams();
@@ -22,15 +23,9 @@ const OrderDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deliveryPersonLocation, setDeliveryPersonLocation] = useState(null);
-  const [userRole, setUserRole] = useState(null);
+  const { userRole } = useContext(AuthContext);
 
   useEffect(() => {
-    // Get user role from localStorage
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (user) {
-      setUserRole(user.role);
-    }
-
     fetchOrderDetails();
     if (order?.status === "On the Way") {
       // Poll more frequently for smoother animation
