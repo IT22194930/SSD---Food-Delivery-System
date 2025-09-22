@@ -4,8 +4,28 @@ const services = require("../config/services");
 
 const router = express.Router();
 
+const { URL } = require("url");
+
+// SSRF Protection: Only allow proxying to known internal services
+const allowedServiceHosts = Object.values(services).map(serviceUrl => {
+  try {
+    return new URL(serviceUrl).host;
+  } catch (e) {
+    return null;
+  }
+}).filter(Boolean);
+
 // Function to Proxy Requests
 const createServiceProxy = (serviceUrl) => {
+  let targetHost;
+  try {
+    targetHost = new URL(serviceUrl).host;
+  } catch (e) {
+    targetHost = null;
+  }
+  if (!allowedServiceHosts.includes(targetHost)) {
+    throw new Error("SSRF protection: Target host is not allowed.");
+  }
   return createProxyMiddleware({
     target: serviceUrl,
     changeOrigin: true,
