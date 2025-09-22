@@ -4,6 +4,9 @@ const dotenv = require("dotenv");
 const helmet = require("helmet");
 const connectDB = require("./config/db");
 const paymentRouter = require("./routes/paymentRoute");
+const dns = require("dns");
+const net = require("net");
+const url = require("url");
 
 dotenv.config();
 
@@ -31,7 +34,6 @@ app.use(
       includeSubDomains: true,
       preload: true,
     },
-    hidePoweredBy: true,
     contentSecurityPolicy: {
       useDefaults: true,
       directives: {
@@ -60,6 +62,34 @@ app.use(
 
 // Explicitly enable X-Content-Type-Options: nosniff
 app.use(helmet.noSniff());
+
+function validateUrl(targetUrl) {
+  try {
+    const parsed = new URL(targetUrl);
+
+    // Allow only HTTPS (or http if needed for internal)
+    if (!["https:", "http:"].includes(parsed.protocol)) {
+      throw new Error("Invalid protocol");
+    }
+
+    // Block localhost and private networks
+    const hostname = parsed.hostname;
+    const blockedHosts = ["localhost", "127.0.0.1", "::1"];
+    if (blockedHosts.includes(hostname)) {
+      throw new Error("Blocked host");
+    }
+
+    // Block private IP ranges
+    const privateRanges = [/^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[0-1])\./];
+    if (privateRanges.some((r) => r.test(hostname))) {
+      throw new Error("Private IP not allowed");
+    }
+
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
 
 // Middleware to check any incoming URL param/body field called "url"
 app.use((req, res, next) => {
