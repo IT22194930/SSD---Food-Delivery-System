@@ -1,4 +1,5 @@
 import React, { createContext, useEffect, useState } from "react";
+import { useMemo } from "react";
 import axios from "axios";
 import { signInWithPopup } from "firebase/auth";
 import { auth, provider } from "../../config/firebase.init";
@@ -14,6 +15,9 @@ export const AuthContext = createContext();
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  // Memoized userId and role from decoded token
+  const userId = useMemo(() => user?._id || user?.id || null, [user]);
+  const userRole = useMemo(() => user?.role || null, [user]);
   const [loader, setLoader] = useState(true);
   const [error, setError] = useState("");
 
@@ -23,13 +27,9 @@ const AuthProvider = ({ children }) => {
       setLoader(true);
       const result = await registerUserFn(userData);
 
-      // Ensure the user data is properly set
-      if (result && result.user) {
-        // Make sure photoUrl is included in the user data
-        if (userData.photoUrl && !result.user.photoUrl) {
-          result.user.photoUrl = userData.photoUrl;
-        }
-        setUser(result.user);
+      // Set user from decoded token
+      if (result && result.token) {
+        setUser(getCurrentUser());
       }
 
       return result;
@@ -46,7 +46,7 @@ const AuthProvider = ({ children }) => {
     try {
       setLoader(true);
       const result = await loginUserFn(credentials);
-      setUser(result.user);
+      setUser(getCurrentUser());
       return result;
     } catch (error) {
       setError(error.message);
@@ -79,10 +79,10 @@ const AuthProvider = ({ children }) => {
         }
       );
 
-      // Update local storage
-      if (response.data) {
-        localStorage.setItem("user", JSON.stringify(response.data));
-        setUser(response.data);
+      // Update user from backend response (if token is refreshed)
+      if (response.data && response.data.token) {
+        localStorage.setItem("token", response.data.token);
+        setUser(getCurrentUser());
       }
 
       return response.data;
@@ -97,13 +97,13 @@ const AuthProvider = ({ children }) => {
     try {
       setLoader(true);
       setError("");
-      
+
       // Use Firebase signInWithPopup
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      
+
       console.log("Firebase Google user:", user);
-      
+
       if (user) {
         // Create user object for backend authentication
         const userImp = {
@@ -116,20 +116,27 @@ const AuthProvider = ({ children }) => {
         if (userImp.email && userImp.name) {
           try {
             // Use the new Google authentication endpoint
-            const response = await axios.post("http://localhost:3000/api/auth/google-auth", userImp);
+            const response = await axios.post(
+              "http://localhost:3000/api/auth/google-auth",
+              userImp
+            );
             console.log("Google authentication response:", response.data);
-            
-            // Store token and user info if successful
+
+            // Store token and set user if successful
             if (response.data.token) {
-              localStorage.setItem('token', response.data.token);
-              localStorage.setItem('user', JSON.stringify(response.data.user));
-              setUser(response.data.user);
+              localStorage.setItem("token", response.data.token);
+              setUser(getCurrentUser());
             }
-            
+
             return result; // Return the Firebase result
           } catch (err) {
-            console.error("Error during Google authentication:", err.response || err);
-            throw new Error(err.response?.data?.message || "Google authentication failed");
+            console.error(
+              "Error during Google authentication:",
+              err.response || err
+            );
+            throw new Error(
+              err.response?.data?.message || "Google authentication failed"
+            );
           }
         } else {
           throw new Error("Missing user data from Google");
@@ -150,8 +157,7 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = () => {
       if (isAuthenticated()) {
-        const currentUser = getCurrentUser();
-        setUser(currentUser);
+        setUser(getCurrentUser());
       } else {
         setUser(null);
       }
@@ -167,6 +173,8 @@ const AuthProvider = ({ children }) => {
 
   const contextValue = {
     user,
+    userId,
+    userRole,
     signUp,
     login,
     logout,
