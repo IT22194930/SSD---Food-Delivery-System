@@ -115,11 +115,11 @@ const DeliveryMap = ({
       // Calculate and draw route
       const calculateRoute = async () => {
         try {
-          //05-Software and Data Integrity Failures-Loosely Scoped Cookie--- <---for start
+          //Cryptographic failures- exposed secrets
           const response = await fetch(
             `https://api.tomtom.com/routing/1/calculateRoute/${restaurantLocation[1]},${restaurantLocation[0]}:${customerLocation[1]},${customerLocation[0]}/json?key=${import.meta.env.VITE_TOMTOM_API_KEY}&routeType=fastest&traffic=true&travelMode=car&language=en-US`
           );
-          //05---------------- <--- for end
+          //----------------
           const data = await response.json();
 
           if (data.routes && data.routes[0]) {
