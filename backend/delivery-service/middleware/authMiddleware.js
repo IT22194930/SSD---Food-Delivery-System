@@ -11,7 +11,6 @@ const authMiddleware = (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1];
-    console.log("Received token:", token);
 
     const verified = jwt.verify(token, process.env.JWT_SECRET);
 
@@ -23,7 +22,6 @@ const authMiddleware = (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error("Auth middleware error:", error);
     res.status(401).json({ message: "Invalid Token" });
   }
 };

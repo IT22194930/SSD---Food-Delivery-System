@@ -231,11 +231,6 @@ const getAllUsers = async (req, res) => {
 //  Update User
 const updateUser = async (req, res) => {
   try {
-    console.log("Update user request received:");
-    console.log("User ID to update:", req.params.id);
-    console.log("Request body:", req.body);
-    console.log("Requesting user:", req.user);
-    
     const { name, email, role, address, phone, photoUrl } = req.body;
     
     // Check if the requesting user is an admin or updating their own profile
@@ -269,11 +264,9 @@ const updateUser = async (req, res) => {
     ).select('-password'); // Don't return password
 
     if (!updatedUser) {
-      console.log("User not found with ID:", req.params.id);
       return res.status(404).json({ message: "User not found" });
     }
 
-    console.log("User updated successfully:", updatedUser._id);
     res.json({ message: "User updated successfully", user: updatedUser });
   } catch (error) {
     console.error("Error updating user:", error);
@@ -315,12 +308,10 @@ const googleAuth = async (req, res) => {
     
     if (user) {
       // User exists, update their info if needed and return login response
-      console.log("Existing Google user found:", { id: user._id, email: user.email });
       
       if (photoUrl && user.photoUrl !== photoUrl) {
         user.photoUrl = photoUrl;
         await user.save();
-        console.log("Updated photoUrl for existing user");
       }
       
       // Generate JWT token
@@ -367,9 +358,7 @@ const googleAuth = async (req, res) => {
         longitude: req.body.longitude,
       };
 
-      console.log("Creating new Google user:", { name, email, role });
       const result = await User.create(userData);
-      console.log("Google user created successfully with ID:", result._id);
 
       // Generate JWT token
       const token = jwt.sign(
