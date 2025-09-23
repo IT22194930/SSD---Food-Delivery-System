@@ -238,7 +238,6 @@ const updateUser = async (req, res) => {
     const isOwnProfile = req.user.id === req.params.id;
     
     if (!isAdmin && !isOwnProfile) {
-      console.log("Permission denied: User is not admin and not updating own profile");
       return res.status(403).json({ 
         message: "Permission denied. You can only update your own profile or must be an admin." 
       });
@@ -246,7 +245,6 @@ const updateUser = async (req, res) => {
     
     // If not admin, prevent role changes
     if (!isAdmin && role && role !== req.user.role) {
-      console.log("Permission denied: Non-admin trying to change role");
       return res.status(403).json({ 
         message: "Permission denied. Only admins can change user roles." 
       });
