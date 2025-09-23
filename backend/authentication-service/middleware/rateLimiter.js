@@ -10,8 +10,13 @@ const authLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  // Skip rate limiting for successful requests
-  skipSuccessfulRequests: true,
+  skipSuccessfulRequests: true, // Only count failed requests
+  handler: (req, res) => {
+    res.status(429).json({
+      error: 'Too many authentication attempts, please try again later',
+      code: 'RATE_LIMIT_EXCEEDED'
+    });
+  },
 });
 
 // More restrictive rate limiting for registration
