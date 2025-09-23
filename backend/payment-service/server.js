@@ -24,7 +24,6 @@ app.use((req, res, next) => {
 });
 
 // Strict CSP using helmet (no unsafe-inline, no unsafe-eval, no wildcards)
-// Apply helmet with strict CSP (removes unsafe-inline & unsafe-eval)
 // Use helmet for security headers (core protections)
 app.use(
   helmet({
