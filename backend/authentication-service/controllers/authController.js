@@ -59,7 +59,8 @@ const register = async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { id: result._id, role: result.role },
-      process.env.JWT_SECRET
+      process.env.JWT_SECRET,
+      { expiresIn: '2h' }
     );
 
     // Send response with token
@@ -98,18 +99,22 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user by email - using $eq operator to prevent NoSQL injection
-    const user = await User.findOne({ email: { $eq: email } });
-    if (user) {
-      console.log("User details:", {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        hasPassword: !!user.password,
-        passwordLength: user.password ? user.password.length : 0,
-      });
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
     }
 
+    // Sanitize email input to prevent NoSQL injection
+    const sanitizedEmail = sanitizeInput(email);
+
+    // Validate email format explicitly
+    const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    if (!emailRegex.test(sanitizedEmail)) {
+      return res.status(400).json({ message: "Validation error: Invalid email format" });
+    }
+
+    // Find user by sanitized email
+    const user = await User.findOne({ email: { $eq: sanitizedEmail } });
     if (!user) {
       logAuthFailure(email, 'user_not_found', req.ip, req.get('User-Agent'));
       return res.status(401).json({ message: "Invalid credentials" });
@@ -126,7 +131,8 @@ const login = async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { id: user._id, role: user.role },
-      process.env.JWT_SECRET
+      process.env.JWT_SECRET,
+      { expiresIn: '2h' }
     );
 
     res.json({
@@ -184,14 +190,23 @@ const getUserByEmail = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    // Sanitize and use $eq operator to prevent NoSQL injection
-    const sanitizedEmail = sanitizeInput(email);
-    const user = await User.findOne({ email: { $eq: sanitizedEmail } });
-    if (user) {
-      res.json(user);
-    } else {
-      res.status(404).json({ message: "User not found" });
+    // Strict type and content check for email param
+    if (typeof email !== "string" || /\{|\$/.test(JSON.stringify(email))) {
+      return res.status(400).json({ message: "Validation error: Invalid email format" });
     }
+    // Sanitize and validate email input
+    const sanitizedEmail = sanitizeInput(email);
+    const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    if (!emailRegex.test(sanitizedEmail)) {
+      return res.status(400).json({ message: "Validation error: Invalid email format" });
+    }
+
+    const user = await User.findOne({ email: { $eq: sanitizedEmail } });
+    if (!user) {
+      return res.status(404).json({ message: "Validation error: User not found" });
+    }
+
+    res.json(user);
   } catch (error) {
     console.error("Error fetching user:", error);
     res.status(500).json({ message: "Error fetching user" });
@@ -311,7 +326,8 @@ const googleAuth = async (req, res) => {
       // Generate JWT token
       const token = jwt.sign(
         { id: user._id, role: user.role },
-        process.env.JWT_SECRET
+        process.env.JWT_SECRET,
+        { expiresIn: '2h' }
       );
 
       return res.json({
@@ -358,7 +374,8 @@ const googleAuth = async (req, res) => {
       // Generate JWT token
       const token = jwt.sign(
         { id: result._id, role: result.role },
-        process.env.JWT_SECRET
+        process.env.JWT_SECRET,
+        { expiresIn: '2h' }
       );
 
       // Send response with token
