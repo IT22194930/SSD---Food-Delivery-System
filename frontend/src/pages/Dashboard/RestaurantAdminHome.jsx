@@ -13,7 +13,8 @@ import {
 } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { getCurrentUser } from "../../utils/auth";
+import { useContext } from "react";
+import { AuthContext } from "../../utilities/providers/AuthProvider";
 import { motion } from "framer-motion";
 import Swal from "sweetalert2";
 
@@ -28,20 +29,22 @@ const RestaurantAdminHome = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const navigate = useNavigate();
 
+  const { userRole, userId } = useContext(AuthContext);
+
   useEffect(() => {
+    // Only allow restaurant_admin to access this dashboard
+    if (userRole !== "restaurant_admin") {
+      setError("Access denied: You do not have permission to view this page.");
+      setLoading(false);
+      return;
+    }
     fetchRestaurantsAndOrders();
-  }, []);
+  }, [userRole]);
 
   const fetchRestaurantsAndOrders = async () => {
     try {
       setLoading(true);
-      const user = getCurrentUser();
-      if (!user) {
-        setError("User not authenticated");
-        setLoading(false);
-        return;
-      }
-
+      // userId is available from context if needed for API calls
       const response = await axios.get(
         `${import.meta.env.VITE_API_URL}/api/restaurants/user/restaurants`,
         {
