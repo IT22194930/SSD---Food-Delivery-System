@@ -59,7 +59,8 @@ const register = async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { id: result._id, role: result.role },
-      process.env.JWT_SECRET
+      process.env.JWT_SECRET,
+      { expiresIn: '2h' }
     );
 
     // Send response with token
@@ -98,18 +99,22 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user by email - using $eq operator to prevent NoSQL injection
-    const user = await User.findOne({ email: { $eq: email } });
-    if (user) {
-      console.log("User details:", {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        hasPassword: !!user.password,
-        passwordLength: user.password ? user.password.length : 0,
-      });
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
     }
 
+    // Sanitize email input to prevent NoSQL injection
+    const sanitizedEmail = sanitizeInput(email);
+
+    // Validate email format explicitly
+    const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    if (!emailRegex.test(sanitizedEmail)) {
+      return res.status(400).json({ message: "Validation error: Invalid email format" });
+    }
+
+    // Find user by sanitized email
+    const user = await User.findOne({ email: { $eq: sanitizedEmail } });
     if (!user) {
       logAuthFailure(email, 'user_not_found', req.ip, req.get('User-Agent'));
       return res.status(401).json({ message: "Invalid credentials" });
@@ -126,7 +131,8 @@ const login = async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { id: user._id, role: user.role },
-      process.env.JWT_SECRET
+      process.env.JWT_SECRET,
+      { expiresIn: '2h' }
     );
 
     res.json({
@@ -184,14 +190,23 @@ const getUserByEmail = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    // Sanitize and use $eq operator to prevent NoSQL injection
-    const sanitizedEmail = sanitizeInput(email);
-    const user = await User.findOne({ email: { $eq: sanitizedEmail } });
-    if (user) {
-      res.json(user);
-    } else {
-      res.status(404).json({ message: "User not found" });
+    // Strict type and content check for email param
+    if (typeof email !== "string" || /\{|\$/.test(JSON.stringify(email))) {
+      return res.status(400).json({ message: "Validation error: Invalid email format" });
     }
+    // Sanitize and validate email input
+    const sanitizedEmail = sanitizeInput(email);
+    const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    if (!emailRegex.test(sanitizedEmail)) {
+      return res.status(400).json({ message: "Validation error: Invalid email format" });
+    }
+
+    const user = await User.findOne({ email: { $eq: sanitizedEmail } });
+    if (!user) {
+      return res.status(404).json({ message: "Validation error: User not found" });
+    }
+
+    res.json(user);
   } catch (error) {
     console.error("Error fetching user:", error);
     res.status(500).json({ message: "Error fetching user" });
@@ -216,11 +231,6 @@ const getAllUsers = async (req, res) => {
 //  Update User
 const updateUser = async (req, res) => {
   try {
-    console.log("Update user request received:");
-    console.log("User ID to update:", req.params.id);
-    console.log("Request body:", req.body);
-    console.log("Requesting user:", req.user);
-    
     const { name, email, role, address, phone, photoUrl } = req.body;
     
     // Check if the requesting user is an admin or updating their own profile
@@ -228,7 +238,6 @@ const updateUser = async (req, res) => {
     const isOwnProfile = req.user.id === req.params.id;
     
     if (!isAdmin && !isOwnProfile) {
-      console.log("Permission denied: User is not admin and not updating own profile");
       return res.status(403).json({ 
         message: "Permission denied. You can only update your own profile or must be an admin." 
       });
@@ -236,7 +245,6 @@ const updateUser = async (req, res) => {
     
     // If not admin, prevent role changes
     if (!isAdmin && role && role !== req.user.role) {
-      console.log("Permission denied: Non-admin trying to change role");
       return res.status(403).json({ 
         message: "Permission denied. Only admins can change user roles." 
       });
@@ -254,11 +262,9 @@ const updateUser = async (req, res) => {
     ).select('-password'); // Don't return password
 
     if (!updatedUser) {
-      console.log("User not found with ID:", req.params.id);
       return res.status(404).json({ message: "User not found" });
     }
 
-    console.log("User updated successfully:", updatedUser._id);
     res.json({ message: "User updated successfully", user: updatedUser });
   } catch (error) {
     console.error("Error updating user:", error);
@@ -300,18 +306,17 @@ const googleAuth = async (req, res) => {
     
     if (user) {
       // User exists, update their info if needed and return login response
-      console.log("Existing Google user found:", { id: user._id, email: user.email });
       
       if (photoUrl && user.photoUrl !== photoUrl) {
         user.photoUrl = photoUrl;
         await user.save();
-        console.log("Updated photoUrl for existing user");
       }
       
       // Generate JWT token
       const token = jwt.sign(
         { id: user._id, role: user.role },
-        process.env.JWT_SECRET
+        process.env.JWT_SECRET,
+        { expiresIn: '2h' }
       );
 
       return res.json({
@@ -351,14 +356,13 @@ const googleAuth = async (req, res) => {
         longitude: req.body.longitude,
       };
 
-      console.log("Creating new Google user:", { name, email, role });
       const result = await User.create(userData);
-      console.log("Google user created successfully with ID:", result._id);
 
       // Generate JWT token
       const token = jwt.sign(
         { id: result._id, role: result.role },
-        process.env.JWT_SECRET
+        process.env.JWT_SECRET,
+        { expiresIn: '2h' }
       );
 
       // Send response with token
