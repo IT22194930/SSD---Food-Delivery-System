@@ -181,10 +181,17 @@ export const router = createBrowserRouter([
         path: "update-user/:id",
         element: <UpdateUser />,
         loader: async ({ params }) => {
+          const token = localStorage.getItem("token");
+          if (!token) {
+            throw new Error("No authentication token found");
+          }
+          
           const response = await fetch(
             `http://localhost:3000/api/auth/users/${params.id}`,
             {
-              credentials: 'include',
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
             }
           );
           if (!response.ok) {
