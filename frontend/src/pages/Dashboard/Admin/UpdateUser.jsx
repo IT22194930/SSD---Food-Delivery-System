@@ -120,7 +120,7 @@ const UpdateUser = () => {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    // Create update data object
+    // Create update data object and filter out empty/null values
     const updateData = {
       name: formData.name,
       phone: formData.phone,
@@ -128,9 +128,19 @@ const UpdateUser = () => {
       photoUrl: formData.photoUrl,
       role: formData.role,
     };
+
+    // Filter out empty strings and null/undefined values
+    const filteredUpdateData = Object.fromEntries(
+      Object.entries(updateData).filter(([key, value]) => 
+        value !== null && value !== undefined && value !== ""
+      )
+    );
+
+    console.log("Sending update data:", filteredUpdateData); // Debug log
+
     // Send update request
     axios
-      .patch(`http://localhost:3000/api/auth/users/${id}`, updateData, getAuthHeaders())
+      .patch(`http://localhost:3000/api/auth/users/${id}`, filteredUpdateData, getAuthHeaders())
       .then((res) => {
         Swal.fire({
           title: "Updated!",
@@ -148,6 +158,10 @@ const UpdateUser = () => {
         let errorMessage = "Failed to update user details.";
         if (err.response?.data?.message) {
           errorMessage = err.response.data.message;
+          // If there are validation errors, show them
+          if (err.response.data.errors && Array.isArray(err.response.data.errors)) {
+            errorMessage += "\n\nValidation errors:\n" + err.response.data.errors.join("\n");
+          }
         } else if (err.response?.data?.error) {
           errorMessage = err.response.data.error;
         }
@@ -283,7 +297,6 @@ const UpdateUser = () => {
                     className="w-full p-3 mt-3 text-sm border rounded-lg outline-none border-primary"
                     placeholder="Phone Number"
                     type="tel"
-                    required
                     id="phone"
                     name="phone"
                     value={formData.phone || ""}

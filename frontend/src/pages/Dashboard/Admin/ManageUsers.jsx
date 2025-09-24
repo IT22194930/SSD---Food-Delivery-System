@@ -12,6 +12,7 @@ import * as XLSX from "xlsx";
 import { writeFile } from "xlsx";
 import Button from "../../../components/Button/Button";
 import InputField from "../../../components/InputField/InputField";
+import axios from "axios";
 
 const ManageUsers = () => {
   const axiosFetch = useAxiosFetch();
@@ -24,8 +25,18 @@ const ManageUsers = () => {
   const [dataList, setDataList] = useState([]);
 
   useEffect(() => {
-    axiosSecure
-      .get("/api/auth/users")
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No authentication token found");
+      return;
+    }
+
+    axios
+      .get(`${import.meta.env.VITE_API_URL}/api/auth/users`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
       .then((res) => {
         // Get all users and sort them by name
         const sortedUsers = res.data.sort((a, b) =>
@@ -37,9 +48,19 @@ const ManageUsers = () => {
       .catch((err) => {
         console.error("Error fetching users:", err);
       });
-  }, [axiosSecure]);
+  }, []);
 
   const handleDelete = (id) => {
+    // Check if user is trying to delete themselves
+    if (currentUser && currentUser._id === id) {
+      Swal.fire({
+        title: "Cannot Delete!",
+        text: "You cannot delete your own account.",
+        icon: "warning",
+      });
+      return;
+    }
+
     Swal.fire({
       title: "Are you sure you want to delete the user?",
       text: "",
@@ -50,8 +71,24 @@ const ManageUsers = () => {
       confirmButtonText: "Yes, Delete User!",
     }).then((result) => {
       if (result.isConfirmed) {
-        axiosSecure
-          .delete(`/api/auth/users/${id}`)
+        // Get token and create headers
+        const token = localStorage.getItem("token");
+        if (!token) {
+          Swal.fire({
+            title: "Error!",
+            text: "Authentication token not found. Please login again.",
+            icon: "error",
+          });
+          return;
+        }
+
+        // Use axios directly with proper auth headers
+        axios
+          .delete(`${import.meta.env.VITE_API_URL}/api/auth/users/${id}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
           .then(() => {
             Swal.fire({
               title: "Deleted!",
@@ -61,7 +98,18 @@ const ManageUsers = () => {
               window.location.reload();
             });
           })
-          .catch((err) => console.log(err));
+          .catch((err) => {
+            console.log(err);
+            let errorMessage = "Failed to delete user.";
+            if (err.response?.data?.message) {
+              errorMessage = err.response.data.message;
+            }
+            Swal.fire({
+              title: "Error!",
+              text: errorMessage,
+              icon: "error",
+            });
+          });
       }
     });
   };

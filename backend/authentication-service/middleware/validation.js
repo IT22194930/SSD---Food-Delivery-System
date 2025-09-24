@@ -20,7 +20,7 @@ const registerSchema = joi.object({
   password: passwordSchema,
   role: roleSchema,
   address: joi.string().max(500).optional(),
-  phone: joi.string().pattern(/^[\+]?[1-9][\d]{0,15}$/).optional(),
+  phone: joi.string().pattern(/^[\+]?[\d]{1,15}$/).optional(),
   photoUrl: joi.string().uri().optional(),
   latitude: joi.number().min(-90).max(90).optional(),
   longitude: joi.number().min(-180).max(180).optional()
@@ -39,7 +39,7 @@ const googleAuthSchema = joi.object({
   photoUrl: joi.string().uri().optional(),
   role: joi.string().valid("customer", "restaurant_admin", "delivery_personnel", "admin").default("customer"),
   address: joi.string().max(500).optional(),
-  phone: joi.string().pattern(/^[\+]?[1-9][\d]{0,15}$/).optional(),
+  phone: joi.string().pattern(/^[\+]?[\d]{1,15}$/).optional(),
   latitude: joi.number().min(-90).max(90).optional(),
   longitude: joi.number().min(-180).max(180).optional()
 });
@@ -50,7 +50,7 @@ const updateUserSchema = joi.object({
   email: joi.string().email().optional(),
   role: joi.string().valid("customer", "restaurant_admin", "delivery_personnel", "admin").optional(),
   address: joi.string().max(500).optional(),
-  phone: joi.string().pattern(/^[\+]?[1-9][\d]{0,15}$/).optional(),
+  phone: joi.string().pattern(/^[\+]?[\d]{1,15}$/).optional(),
   photoUrl: joi.string().uri().optional(),
   latitude: joi.number().min(-90).max(90).optional(),
   longitude: joi.number().min(-180).max(180).optional()

@@ -275,6 +275,16 @@ const updateUser = async (req, res) => {
 //  Delete User
 const deleteUser = async (req, res) => {
   try {
+    // Check if the requesting user is an admin
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied. Only admins can delete users." });
+    }
+
+    // Prevent admin from deleting themselves
+    if (req.user.id === req.params.id) {
+      return res.status(400).json({ message: "You cannot delete your own account." });
+    }
+
     // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: "Invalid user ID format" });
