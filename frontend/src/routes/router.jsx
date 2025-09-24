@@ -7,6 +7,7 @@ import ContactUs from "../pages/ContactUs/ContactUs";
 import AboutUs from "../pages/AboutUs/AboutUs";
 import Login from "../pages/user/Login";
 import Register from "../pages/user/Register";
+import ProtectedRoute from "../components/ProtectedRoute";
 import DashboardLayout from "../layout/DashboardLayout";
 import Dashboard from "../pages/Dashboard/Dashboard";
 import UserHome from "../pages/Dashboard/User/UserHome";
@@ -80,19 +81,19 @@ export const router = createBrowserRouter([
       },
       {
         path: "user-profile",
-        element: <Profile />,
+        element: <ProtectedRoute><Profile /></ProtectedRoute>,
       },
       {
         path: "restaurant-registration",
-        element: <RestaurantRegistration />,
+        element: <ProtectedRoute><RestaurantRegistration /></ProtectedRoute>,
       },
       {
         path: "delivery-registration",
-        element: <DeliveryRegistration />,
+        element: <ProtectedRoute><DeliveryRegistration /></ProtectedRoute>,
       },
       {
         path: "cart",
-        element: <Cart />,
+        element: <ProtectedRoute><Cart /></ProtectedRoute>,
       },
       {
         path: "restaurant/:id",
@@ -100,29 +101,29 @@ export const router = createBrowserRouter([
       },
       {
         path: "cart/:restaurantId",
-        element: <CartDetails />,
+        element: <ProtectedRoute><CartDetails /></ProtectedRoute>,
       },
       {
         path: "checkout/:restaurantId",
-        element: <Checkout />,
+        element: <ProtectedRoute><Checkout /></ProtectedRoute>,
       },
       {
         path: "my-orders",
-        element: <MyOrders />,
+        element: <ProtectedRoute><MyOrders /></ProtectedRoute>,
       },
       {
         path: "order-details/:orderId",
-        element: <OrderDetails />,
+        element: <ProtectedRoute><OrderDetails /></ProtectedRoute>,
       },
       {
         path: "notifications",
-        element: <Notifications />,
+        element: <ProtectedRoute><Notifications /></ProtectedRoute>,
       },
     ],
   },
   {
     path: "/dashboard",
-    element: <DashboardLayout />,
+    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
     children: [
       {
         index: true,
@@ -180,13 +181,10 @@ export const router = createBrowserRouter([
         path: "update-user/:id",
         element: <UpdateUser />,
         loader: async ({ params }) => {
-          const token = localStorage.getItem("token");
           const response = await fetch(
             `http://localhost:3000/api/auth/users/${params.id}`,
             {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
+              credentials: 'include',
             }
           );
           if (!response.ok) {

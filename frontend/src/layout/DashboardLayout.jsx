@@ -40,29 +40,9 @@ const adminNavItems = [
     label: "Delivery Requests",
   },
   {
-    to: "/dashboard/special-requests",
-    icon: <MdRequestQuote className="text-2xl" />,
-    label: "Special Requests",
-  },
-  {
-    to: "/dashboard/feedbacks",
-    icon: <MdFeedback className="text-2xl" />,
-    label: "Customer Feedbacks",
-  },
-  {
     to: "/dashboard/manage-users",
     icon: <FaUsers className="text-2xl" />,
     label: "Manage Users",
-  },
-  {
-    to: "/dashboard/manage-collectors",
-    icon: <GiPikeman className="text-2xl" />,
-    label: "Manage Collectors",
-  },
-  {
-    to: "/dashboard/schedules",
-    icon: <AiFillSchedule className="text-2xl" />,
-    label: "Schedules",
   },
   {
     to: "/dashboard/payment-details",
@@ -91,7 +71,7 @@ const customerNavItems = [
     to: "/dashboard/my-orders",
     icon: <MdFoodBank className="text-2xl" />,
     label: "My Orders",
-  }
+  },
 ];
 
 const restaurantAdminNavItems = [
@@ -134,7 +114,6 @@ const deliveryPersonnelNavItems = [
     icon: <FaHistory className="text-2xl" />,
     label: "Delivery History",
   },
-  
 ];
 
 const lastMenuItems = [
@@ -152,7 +131,7 @@ const DashboardLayout = () => {
   const { loader, logout } = useAuth();
   const { currentUser } = useUser();
   const navigate = useNavigate();
-  
+
   // Simply use the current user's role - no localStorage needed
   const selectedRole = currentUser?.role || "customer";
 

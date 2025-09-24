@@ -33,7 +33,6 @@ import axios from "axios";
 
 const navLinks = [
   { name: "Home", route: "/", icon: FaHome },
-  { name: "Payments", route: "/payments", icon: FaCreditCard },
   { name: "About Us", route: "/aboutUs", icon: FaInfoCircle },
   { name: "Services", route: "/services", icon: FaUtensils },
   { name: "Contact Us", route: "/contact", icon: FaEnvelope },
@@ -400,25 +399,6 @@ const NavBar = () => {
                             </span>
                           )}
                         </span>
-                      </NavLink>
-                    </li>
-                  )}
-
-                  {currentUser?.role === "admin" && (
-                    <li>
-                      <NavLink
-                        to="/manage-locations"
-                        className={({ isActive }) =>
-                          `font-bold ${
-                            isActive
-                              ? "text-primary"
-                              : navBg.includes("bg-transparent") && isHome
-                              ? "text-white"
-                              : "text-black dark:text-white"
-                          } hover:text-primary duration-300`
-                        }
-                      >
-                        Map
                       </NavLink>
                     </li>
                   )}
