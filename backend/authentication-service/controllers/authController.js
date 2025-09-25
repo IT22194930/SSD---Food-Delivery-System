@@ -83,7 +83,6 @@ const register = async (req, res) => {
     // Log successful registration
     logAuthSuccess(result._id, result.email, 'local_registration');
   } catch (error) {
-    console.error("Error registering user:", error);
     logSecurityEvent('registration_error', {
       email: req.body.email,
       error: error.message,
@@ -153,7 +152,6 @@ const login = async (req, res) => {
     // Log successful login
     logAuthSuccess(user._id, user.email, 'local_login');
   } catch (error) {
-    console.error("Error during login:", error);
     logSecurityEvent('login_error', {
       email: req.body.email,
       error: error.message,
@@ -177,7 +175,6 @@ const getUserById = async (req, res) => {
 
     res.json(user);
   } catch (error) {
-    console.error("Error fetching user:", error);
     res.status(500).json({ message: "Error fetching user" });
   }
 };
@@ -208,7 +205,6 @@ const getUserByEmail = async (req, res) => {
 
     res.json(user);
   } catch (error) {
-    console.error("Error fetching user:", error);
     res.status(500).json({ message: "Error fetching user" });
   }
 };
@@ -223,7 +219,6 @@ const getAllUsers = async (req, res) => {
     const users = await User.find().select("-password");
     res.json(users);
   } catch (error) {
-    console.error("Error fetching users:", error);
     res.status(500).json({ message: "Error fetching users" });
   }
 };
@@ -267,7 +262,6 @@ const updateUser = async (req, res) => {
 
     res.json({ message: "User updated successfully", user: updatedUser });
   } catch (error) {
-    console.error("Error updating user:", error);
     res.status(500).json({ message: "Error updating user", error: error.message });
   }
 };
@@ -296,7 +290,6 @@ const deleteUser = async (req, res) => {
 
     res.json({ message: "User deleted successfully" });
   } catch (error) {
-    console.error("Error deleting user:", error);
     res.status(500).json({ message: "Error deleting user" });
   }
 };
@@ -396,7 +389,6 @@ const googleAuth = async (req, res) => {
       logOAuthEvent('google_registration_success', email, 'google', { userId: result._id });
     }
   } catch (error) {
-    console.error("Error with Google authentication:", error);
     logSecurityEvent('google_oauth_error', {
       email: req.body.email,
       error: error.message,
